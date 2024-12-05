@@ -4,6 +4,8 @@ namespace Nextgenthemes\ARVE;
 add_action( 'plugins_loaded', __NAMESPACE__ . '\init_920' );
 
 function init_920(): void {
+
+	stop_outdated_addons_from_executing();
 	init_public();
 
 	if ( is_admin() ) {
@@ -15,7 +17,7 @@ function init_public(): void {
 
 	add_option( 'arve_install_date', time() );
 
-	if ( version_compare( get_option( 'arve_version', '' ), '10.1.2', '<' ) ) {
+	if ( version_compare( get_option( 'arve_version', '' ), '10.3.5-alpha1', '<' ) ) {
 		add_action(
 			'wp_loaded',
 			function (): void {
@@ -26,12 +28,9 @@ function init_public(): void {
 
 	update_option( 'arve_version', VERSION );
 
-	require_once PLUGIN_DIR . '/php/Common/init.php';
-
 	require_once PLUGIN_DIR . '/php/Base.php';
 	require_once PLUGIN_DIR . '/php/Video.php';
 	require_once PLUGIN_DIR . '/php/fn-deprecated.php';
-	require_once PLUGIN_DIR . '/php/fn-compat.php';
 	require_once PLUGIN_DIR . '/php/fn-assets.php';
 	require_once PLUGIN_DIR . '/php/fn-html-output.php';
 	require_once PLUGIN_DIR . '/php/fn-misc.php';
@@ -197,4 +196,13 @@ function delete_oembed_cache(): string {
 	}
 
 	return $message;
+}
+
+function stop_outdated_addons_from_executing() {
+
+	if ( defined('Nextgenthemes\ARVE\Pro\VERSION')
+		&& version_compare( \Nextgenthemes\ARVE\Pro\VERSION, PRO_VERSION_REQUIRED, '<' )
+	) {
+		remove_action( 'plugins_loaded', 'Nextgenthemes\ARVE\Pro\init', 15 );
+	}
 }

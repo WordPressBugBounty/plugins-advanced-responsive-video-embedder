@@ -17,6 +17,7 @@ class Video {
 	private bool $arve_link;
 	private bool $autoplay;
 	private bool $controls;
+	private bool $credentialless;
 	private bool $disable_links;
 	private bool $grow;
 	private bool $hide_title;
@@ -98,19 +99,17 @@ class Video {
 	// process data
 	private ?object $oembed_data;
 	private array $origin_data;
-	private WP_Error $errors;
 
 	/**
 	 * @param array <string, any> $args
 	 */
 	public function __construct( array $args ) {
-		$this->errors   = arve_errors();
 		$this->org_args = $args;
 		ksort( $this->org_args );
 	}
 
 	/**
-	 * Set the value of a property.
+	 * Prevent setting properties directly
 	 *
 	 * @param string $property The name of the property to set.
 	 * @param mixed $value The value to set for the property.
@@ -152,7 +151,7 @@ class Video {
 			//  $trace = '<br>Exception Trace:<br>' . var_export($e->getTrace(), true);
 			// }
 
-			$this->errors->add( $e->getCode(), $e->getMessage() . $trace );
+			arve_errors()->add( $e->getCode(), $e->getMessage() . $trace );
 
 			$html .= get_error_html();
 			$html .= $this->get_debug_info();
@@ -502,10 +501,10 @@ class Video {
 
 		if ( 'youtube' === $this->provider && str_contains( $this->url, '/shorts/' ) ) {
 			$ratio = '9:16';
-		} elseif ( ! empty( $this->oembed_data->width ) &&
-			is_numeric( $this->oembed_data->width ) &&
-			! empty( $this->oembed_data->height ) &&
-			is_numeric( $this->oembed_data->height )
+		} elseif ( ! empty( $this->oembed_data->width )
+			&& is_numeric( $this->oembed_data->width )
+			&& ! empty( $this->oembed_data->height )
+			&& is_numeric( $this->oembed_data->height )
 		) {
 			$ratio = $this->oembed_data->width . ':' . $this->oembed_data->height;
 		} else {
@@ -809,7 +808,7 @@ class Video {
 			'screen-wake-lock'                => 'none',
 			'serial'                          => 'none',
 			'speaker-selection'               => 'self',
-			'sync-xhr'                        => 'none',
+			'sync-xhr'                        => 'self', // viddler fails without this
 			'usb'                             => 'none',
 			'web-share'                       => 'self',
 			'window-management'               => 'none',
@@ -828,22 +827,23 @@ class Video {
 		}
 
 		$this->iframe_attr = array(
-			'credentialless'  => '',
-			'referrerpolicy'  => $this->referrerpolicy(),
-			'allow'           => $allow,
-			'allowfullscreen' => '',
-			'class'           => $class,
-			'data-arve'       => $this->uid,
-			'data-src-no-ap'  => iframesrc_urlarg_autoplay( $this->src, $this->provider, false ),
-			'frameborder'     => '0',
-			'height'          => $this->height,
-			'name'            => $this->iframe_name,
-			'sandbox'         => $this->encrypted_media ? null : $sandbox,
-			'scrolling'       => 'no',
-			'src'             => $this->src,
-			'width'           => $this->width,
-			'title'           => $this->title,
-			'loading'         => ( 'normal' === $this->mode ) ? 'lazy' : 'eager',
+			'credentialless'     => $this->credentialless,
+			'referrerpolicy'     => $this->referrerpolicy(),
+			'allow'              => $allow,
+			'allowfullscreen'    => '',
+			'class'              => $class,
+			'data-lenis-prevent' => '',
+			'data-arve'          => $this->uid,
+			'data-src-no-ap'     => iframesrc_urlarg_autoplay( $this->src, $this->provider, false ),
+			'frameborder'        => '0',
+			'height'             => $this->height,
+			'name'               => $this->iframe_name,
+			'sandbox'            => $this->encrypted_media ? null : $sandbox,
+			'scrolling'          => 'no',
+			'src'                => $this->src,
+			'width'              => $this->width,
+			'title'              => $this->title,
+			'loading'            => ( 'normal' === $this->mode ) ? 'lazy' : 'eager',
 		);
 
 		$this->iframe_attr = apply_filters( 'nextgenthemes/arve/iframe_attr', $this->iframe_attr, get_object_vars($this) );
