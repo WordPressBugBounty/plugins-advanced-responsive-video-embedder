@@ -1,20 +1,30 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types = 1);
+
 namespace Nextgenthemes\ARVE\Admin;
 
-use Nextgenthemes\ARVE;
-use Nextgenthemes\WP;
+use function Nextgenthemes\ARVE\settings;
+use function Nextgenthemes\ARVE\settings_tabs;
+use function Nextgenthemes\WP\Admin\print_settings_blocks;
+
+const DIALOG_NAMESPACE = 'nextgenthemes_arve_dialog';
 
 function add_media_button(): void {
 
-	foreach ( ARVE\settings( 'shortcode' ) as $k => $v ) {
-		$options[ $k ] = '';
+	foreach ( settings( 'shortcode' )->get_all() as $k => $setting ) {
+
+		if ( 'boolean' === $setting->type && ! $setting->option ) {
+			$options[ $k ] = $setting->default;
+		} else {
+			$options[ $k ] = '';
+		}
 	}
 
 	wp_enqueue_script_module( 'nextgenthemes-settings' );
 	wp_interactivity_config(
-		'nextgenthemes_arve_dialog',
+		DIALOG_NAMESPACE,
 		[
-			'restUrl'        => 'was',
 			'nonce'          => wp_create_nonce( 'wp_rest' ),
 			'siteUrl'        => get_site_url(),
 			'homeUrl'        => get_home_url(),
@@ -23,7 +33,7 @@ function add_media_button(): void {
 	);
 
 	wp_interactivity_state(
-		'nextgenthemes_arve_dialog',
+		DIALOG_NAMESPACE,
 		[
 			'options'    => $options,
 			'shortcode'  => '[arve url="" /]',
@@ -39,7 +49,7 @@ function add_media_button(): void {
 		title="<?php esc_attr_e( 'Advanced Responsive Video Embedder', 'advanced-responsive-video-embedder' ); ?>"
 		class="arve-btn button add_media"
 		type="button"
-		data-wp-interactive="nextgenthemes_arve_dialog"
+		data-wp-interactive="<?= esc_attr( DIALOG_NAMESPACE ); ?>"
 		data-wp-on--click="actions.openShortcodeDialog"
 	>
 	<span class="wp-media-buttons-icon arve-icon"></span> 
@@ -58,7 +68,7 @@ function create_shortcode_dialog(): void {
 	?>
 	<dialog 
 		class="arve-sc-dialog"
-		data-wp-interactive="nextgenthemes_arve_dialog"
+		data-wp-interactive="<?= esc_attr( DIALOG_NAMESPACE ); ?>"
 		data-wp-watch="callbacks.updateShortcode"
 	>
 		<div class="arve-sc-dialog__wrap">
@@ -85,11 +95,9 @@ function create_shortcode_dialog(): void {
 
 			<div class="arve-sc-dialog__body">
 				<?php
-				\Nextgenthemes\WP\Admin\print_settings_blocks(
-					ARVE\settings( 'shortcode' ),
-					ARVE\settings_sections(),
-					ARVE\PREMIUM_SECTIONS,
-					ARVE\PREMIUM_URL_PREFIX,
+				print_settings_blocks(
+					settings( 'shortcode' ),
+					settings_tabs(),
 					'shortcode-dialog'
 				);
 				?>

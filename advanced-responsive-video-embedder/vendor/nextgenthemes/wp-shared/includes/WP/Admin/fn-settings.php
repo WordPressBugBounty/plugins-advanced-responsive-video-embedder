@@ -1,9 +1,16 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types = 1);
+
 namespace Nextgenthemes\WP\Admin;
 
-use function \Nextgenthemes\WP\get_defined_key;
-use function \Nextgenthemes\WP\has_valid_key;
-use function \Nextgenthemes\WP\attr;
+use Nextgenthemes\WP\SettingsData;
+use Nextgenthemes\WP\SettingValidator;
+
+use function Nextgenthemes\WP\get_defined_key;
+use function Nextgenthemes\WP\has_valid_key;
+use function Nextgenthemes\WP\attr;
+use function Nextgenthemes\WP\kses_https_links;
 use function wp_interactivity_data_wp_context as data_wp_context; // This is actually a deprecated function but we use the real one. Avoiding the deprecation warning and the awful long function name.
 
 const DESCRIPTION_ALLOWED_HTML = array(
@@ -134,12 +141,13 @@ function print_select_field( string $key, array $option ): void {
 			<select x-model="<?php echo esc_attr( "options.$key" ); ?>" >
 				<?php
 				$first = true;
-				foreach ( $option['options'] as $k => $v ): ?>
+				foreach ( $option['options'] as $k => $v ) :
+					?>
 					<option value="<?php echo esc_attr( $k ); ?>" <?php echo $first ? 'selected' : ''; ?>>
 						<?php echo esc_html( $v ); ?>
 					</option>
-				<?php
-				$first = false;
+					<?php
+					$first = false;
 				endforeach;
 				?>
 			</select>
@@ -148,56 +156,57 @@ function print_select_field( string $key, array $option ): void {
 	<?php
 }
 
+/**
+ * Prints all settings blocks.
+ *
+ * param array<string, SettingValidator> $settings The settings data.
+ * @param array<string, array>            $tabs     The tabs.
+ * @param string                          $context  The context, either 'settings-page' or 'gutenberg_block'. Default 'settings-page'.
+ */
 function print_settings_blocks(
-	array $settings,
-	array $sections,
-	array $premium_sections,
-	string $premium_url_prefix,
+	SettingsData $settings,
+	array $tabs,
 	string $context = 'settings-page'
 ): void {
 
+	$settings = $settings->get_all();
+
 	foreach ( $settings as $key => $setting ) {
 
-		if ( 'settings-page' === $context && empty($setting['option']) ) {
+		if ( 'settings-page' === $context && empty( $setting->option ) ) {
 			continue;
 		}
 
 		// remove default empty select option, its for the sc dialog only
-		if ( 'settings-page' === $context && ! empty($setting['options']) ) {
-			unset($setting['options']['']);
+		if ( 'settings-page' === $context && ! empty( $setting->options ) ) {
+			$setting->remove_empty_select_option();
 		}
 
- 		$setting['ui']         = $setting['ui'] ?? null;
-		$setting['option_key'] = $key;
-		$setting['section']    = $setting['tag'];
-		$setting['premium']    = in_array( $setting['tag'], $premium_sections, true );
-		$setting['tag_name']   = $sections[ $setting['tag'] ];
-
-		if ( 'hidden' === $setting['ui'] ) {
+		if ( 'hidden' === $setting->ui ) {
 			continue;
 		}
 
-		option_block( $key, $setting, $premium_url_prefix );
+		option_block( $key, $setting, $tabs );
 	}
 }
 
-function option_block( string $key, array $setting, string $premium_url_prefix ): void {
+function option_block( string $key, SettingValidator $setting, array $tabs ): void {
 
 	$input_id = 'ngt-option--' . $key;
-	$section = str_replace( '_', '-', $setting['section'] );
+	$tab      = str_replace( '_', '-', $setting->tab );
 
 	?>
 	<div 
-		class="<?= esc_attr( "ngt-opt ngt-opt--$key ngt-opt--section--$section" ); ?>"
-		data-wp-bind--hidden="!state.isActiveSection"
-		<?= data_wp_context( $setting ); // phpcs:ignore ?>
+		class="<?= esc_attr( "ngt-opt ngt-opt--$key ngt-opt--section--$tab" ); ?>"
+		data-wp-bind--hidden="!state.isActiveTab"
+		<?= data_wp_context( $setting->to_array() ); // phpcs:ignore ?>
 	>
 		<div>
 			<div>
 				<?php
-				if ( 'select' === $setting['ui_element'] ) {
+				if ( 'select' === $setting->ui_element ) {
 
-					label($input_id, $setting );
+					label( $input_id, $setting, $tabs );
 					?>
 					<select 
 						class="form-select"
@@ -207,56 +216,57 @@ function option_block( string $key, array $setting, string $premium_url_prefix )
 						data-wp-on--change="actions.inputChange"
 						data-wp-bind--disabled="state.isSaving"
 					>
-						<?php foreach ( $setting['options'] as $k => $v ) : ?>
+						<?php foreach ( $setting->options as $k => $v ) : ?>
 							<option value="<?= esc_attr( $k ); ?>"><?= esc_html( $v ); ?></option>
 						<?php endforeach; ?>
 					</select>
 					<?php
-				} elseif ( 'checkbox' === $setting['ui_element_type'] ) {
+				} elseif ( 'checkbox' === $setting->ui_element_type ) {
 					printf(
 						'<input %s/>',
-						attr(
+						attr( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 							array(
-								'type'               => 'checkbox',
-								'id'                 => $input_id,
-								'data-wp-on--change' => 'actions.checkboxChange',
-								'data-wp-bind--checked' => "state.options.$key",
-								'placeholder'        => $setting['placeholder'] ?? false,
-								'class'              => 'form-check-input',
+								'type'                   => 'checkbox',
+								'id'                     => $input_id,
+								'data-wp-on--change'     => 'actions.checkboxChange',
+								'data-wp-bind--checked'  => "state.options.$key",
+								'placeholder'            => $setting->placeholder,
+								'class'                  => 'form-check-input',
 								'data-wp-bind--disabled' => 'state.isSaving',
 							)
 						),
 					);
-					label($input_id, $setting );
+					label( $input_id, $setting, $tabs );
 				} else {
-					label($input_id, $setting );
+					label( $input_id, $setting, $tabs );
+
 					printf(
 						'<input %s/>',
-						attr(
+						attr( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 							array(
-								'type'                => $setting['ui_element_type'],
-								'id'                  => $input_id,
-								'data-wp-on--keyup'   => 'actions.inputChange',
-								'data-wp-on--change'  => 'actions.inputChange',
+								'type'                   => $setting->ui_element_type,
+								'id'                     => $input_id,
+								'data-wp-on--keyup'      => 'actions.inputChange',
+								'data-wp-on--change'     => 'actions.inputChange',
 								// 'data-arve-url'       => ( 'url' === $key ), // TODO: remove
 								// 'data-wp-context'     => ( 'url' === $key ) ? 'url' : false,
-								'data-wp-bind--value' => "state.options.$key",
-								'placeholder'         => $setting['placeholder'] ?? false,
-								'class'               => ( 'license_key' === $setting['ui'] ) ?
+								'data-wp-bind--value'    => "state.options.$key",
+								'placeholder'            => $setting->placeholder,
+								'class'                  => ( 'license_key' === $setting->ui ) ?
 									'large-text text-large--ngt-key' :
 									'large-text',
-								'maxlength'           => ( 'license_key' === $setting['ui'] ) ? 32 : false,
+								'maxlength'              => ( 'license_key' === $setting->ui ) ? 32 : false,
 								'data-wp-bind--readonly' => 'state.isSaving',
-								'readonly'               => ( 'license_key' === $setting['ui'] && get_defined_key( $key ) ) ? 'readonly' : false,
+								'readonly'               => ( 'license_key' === $setting->ui && get_defined_key( $key ) ) ? 'readonly' : false,
 							)
 						)
 					);
-					
-					if ( 'license_key' === $setting['ui'] ) {
-						license_key_ui( $key );	
+
+					if ( 'license_key' === $setting->ui ) {
+						license_key_ui( $key );
 					}
 
-					if ( 'image_upload' === $setting['ui'] ) : 
+					if ( 'image_upload' === $setting->ui ) :
 						wp_enqueue_media();
 						?>
 						<button
@@ -266,21 +276,16 @@ function option_block( string $key, array $setting, string $premium_url_prefix )
 						>
 							Select Image
 						</button>
-					<?php endif;
+						<?php
+					endif;
 				}
 				?>
-
-				<?php if ( $setting['premium'] ) : ?>
-					<a hidden class="ngt-opt__premium-link" href="<?= esc_url( $premium_url_prefix . $setting['tag'] ); ?>">
-						<?php esc_html_e( $setting['tag'] ); ?>
-					</a>
-				<?php endif; ?>
 			</div>
 		</div>
 
-		<?php if ( ! empty( $setting['description'] ) ) : ?>
+		<?php if ( ! empty( $setting->description ) ) : ?>
 			<p class="ngt-opt__description" data-wp-bind--hidden="!state.help">
-				<?= \wp_kses( $setting['description'], DESCRIPTION_ALLOWED_HTML, array( 'http', 'https' ) ); ?>
+				<?= wp_kses( $setting->description, DESCRIPTION_ALLOWED_HTML, array( 'https' ) ); ?>
 			</p>
 		<?php endif; ?>
 		<hr>
@@ -324,25 +329,31 @@ function license_key_ui( string $key ): void {
 	<?php
 }
 
-function label( string $input_id, array $setting ): void {
+function label( string $input_id, SettingValidator $setting, array $tabs ): void {
+
+	$premium_link = $tabs[ $setting->tab ]['premium_link'] ?? false;
+
 	?>
 	<span class="ngt-label-wrap">
 		<label
 			for="<?= esc_attr( $input_id ); ?>"
-			class="ngt-label ngt-label--<?= esc_attr( $setting['tag'] ); ?>"
+			class="ngt-label ngt-label--<?= esc_attr( $setting->tab ); ?>"
 		>
-			<?= esc_html( $setting['label'] ); ?>
+		<?php
+		echo wp_kses(
+			$setting->label,
+			[
+				'code' => [],
+				'span' => [],
+			]
+		);
+		?>
 		</label>
 		<?php
-		if ( $setting['premium'] ) {
-			printf(
-				' <a href="https://nextgenthemes.com/plugins/arve-%s">%s</a>',
-				esc_attr( $setting['tag'] ),
-				esc_html( $setting['tag_name'] )
-			);
+		if ( $premium_link ) {
+			echo kses_https_links( $premium_link ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 		?>
 	</span>
 	<?php
 }
- 

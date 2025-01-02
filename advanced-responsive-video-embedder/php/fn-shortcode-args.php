@@ -1,10 +1,11 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types = 1);
+
 namespace Nextgenthemes\ARVE;
 
 use function Nextgenthemes\WP\remove_url_query;
 use function Nextgenthemes\WP\get_url_arg;
-use function Nextgenthemes\WP\valid_url;
-use function Nextgenthemes\WP\get_attribute_from_html_tag;
 
 function arg_maxwidth( int $maxwidth, string $provider, string $align ): int {
 
@@ -57,7 +58,14 @@ function arg_mode( string $mode ): string {
 
 function compare_oembed_src_with_generated_src( string $src, string $src_gen, string $provider, string $url ): void {
 
-	if ( empty($src) || empty($src_gen) ) {
+	$options       = options();
+	$always        = 'always' === $options['show_src_mismatch_errors'];
+	$dev_mode_only = is_dev_mode() && 'dev-mode' === $options['show_src_mismatch_errors'];
+
+	if ( empty( $src )
+		|| empty( $src_gen )
+		|| ! ( $always || $dev_mode_only )
+	) {
 		return;
 	}
 
@@ -92,22 +100,22 @@ function compare_oembed_src_with_generated_src( string $src, string $src_gen, st
 
 		$msg  = 'src mismatch<br>' . PHP_EOL;
 		$msg .= '<pre>' . PHP_EOL;
-		$msg .= str_pad('provider:', $l, ' ') . esc_html($provider) . '<br>';
-		$msg .= str_pad('url:', $l, ' ') . esc_url($url) . '<br><br>';
-		$msg .= str_pad('src:', $l, ' ') . esc_url($org_src) . '<br>';
+		$msg .= str_pad( 'provider:', $l, ' ' ) . esc_html( $provider ) . '<br>';
+		$msg .= str_pad( 'url:', $l, ' ' ) . esc_url( $url ) . '<br><br>';
+		$msg .= str_pad( 'src:', $l, ' ' ) . esc_url( $org_src ) . '<br>';
 
 		if ( $src !== $org_src ) {
-			$msg .= str_pad('src mod:', $l, ' ') . esc_url($src) . '<br>';
+			$msg .= str_pad( 'src mod:', $l, ' ' ) . esc_url( $src ) . '<br>';
 		}
 
 		if ( $src_gen !== $org_src_gen ) {
-			$msg .= str_pad('src gen mod:', $l, ' ') . esc_url($src_gen) . '<br>';
+			$msg .= str_pad( 'src gen mod:', $l, ' ' ) . esc_url( $src_gen ) . '<br>';
 		}
 
-		$msg .= str_pad('src gen:', $l, ' ') . esc_url($org_src_gen) . '<br>';
+		$msg .= str_pad( 'src gen:', $l, ' ' ) . esc_url( $org_src_gen ) . '<br>';
 		$msg .= '</pre>';
 
-		arve_errors()->add( 'hidden', $msg );
+		arve_errors()->add( 'src-mismatch', $msg );
 	}
 }
 
@@ -330,7 +338,7 @@ function get_video_type( string $ext ): string {
 
 function iframesrc_urlarg_enablejsapi( string $src, string $provider ): string {
 
-	if ( function_exists('Nextgenthemes\ARVE\Pro\init') && 'youtube' === $provider ) {
+	if ( function_exists( 'Nextgenthemes\ARVE\Pro\init' ) && 'youtube' === $provider ) {
 		$src = add_query_arg( array( 'enablejsapi' => 1 ), $src );
 	}
 
@@ -366,13 +374,13 @@ function iframesrc_urlargs( string $src, string $provider, string $mode, string 
 function shortcode_pairs(): array {
 
 	$options  = options();
-	$settings = settings( 'shortcode' );
+	$settings = settings( 'shortcode' )->get_all();
 
-	foreach ( $settings as $k => $v ) {
-		if ( $v['option'] ) {
+	foreach ( $settings as $k => $setting ) {
+		if ( $setting->option ) {
 			$pairs[ $k ] = $options[ $k ];
 		} else {
-			$pairs[ $k ] = $v['default'];
+			$pairs[ $k ] = $setting->default;
 		}
 	}
 
@@ -394,7 +402,7 @@ function shortcode_pairs(): array {
 			'brightcove_embed'   => '',
 			'video_sources_html' => '',
 			'post_id'            => '',
-			'thumbnail_fallback' => '', # Pros
+			'thumbnail_fallback' => '', # Pro
 			'oembed_data'        => null,
 			'origin_data'        => array(),
 		)

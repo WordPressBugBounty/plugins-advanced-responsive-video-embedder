@@ -1,4 +1,7 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types = 1);
+
 namespace Nextgenthemes\WP;
 
 /**
@@ -17,7 +20,7 @@ function get_attribute_from_html_tag( array $query, string $attribute, string $h
 
 		$attr_value = $wphtml->get_attribute( $attribute );
 
-		if ( is_string( $attr_value ) && ! empty( $attr_value) ) {
+		if ( is_string( $attr_value ) && ! empty( $attr_value ) ) {
 			return $attr_value;
 		}
 	}
@@ -80,8 +83,7 @@ function remove_url_query( string $url ): string {
 function camel_case( string $str, string $separator = '-', bool $capitalize_first_character = false ): string {
 
 	if ( strlen( $separator ) !== 1 ) {
-		wp_trigger_error( __FUNCTION__, '$separator must be a single character.' );
-		return $str;
+		throw new \InvalidArgumentException( 'Separator must be a single character.' );
 	}
 
 	$str = str_replace( $separator, '', ucwords( $str, $separator ) );
@@ -93,6 +95,21 @@ function camel_case( string $str, string $separator = '-', bool $capitalize_firs
 	return $str;
 }
 
+function kses_https_links( string $html ): string {
+
+	return wp_kses(
+		$html,
+		array(
+			'a' => array(
+				'href'   => true,
+				'target' => true,
+				'class'  => true,
+			),
+		),
+		array( 'https' )
+	);
+}
+
 /**
  * Removes the specified suffix from the given string.
  *
@@ -102,8 +119,8 @@ function camel_case( string $str, string $separator = '-', bool $capitalize_firs
  */
 function remove_suffix( string $haystack, string $needle ): string {
 
-	if ( str_ends_with($haystack, $needle) ) {
-		return substr($haystack, 0, strlen($haystack) - strlen($needle));
+	if ( str_ends_with( $haystack, $needle ) ) {
+		return substr( $haystack, 0, strlen( $haystack ) - strlen( $needle ) );
 	}
 
 	return $haystack;
@@ -140,7 +157,7 @@ function valid_url( string $url ): ?string {
  */
 function get_file_extension( string $url ): string {
 	// Return the file extension or an empty string if there is none
-	return pathinfo( (string) parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
+	return pathinfo( (string) parse_url( $url, PHP_URL_PATH ), PATHINFO_EXTENSION );
 }
 
 /**
@@ -151,7 +168,7 @@ function get_file_extension( string $url ): string {
  * @return string The modified filename with the new extension.
  */
 function replace_extension( string $filename, string $new_extension ): string {
-	$info = pathinfo( $filename,  );
+	$info = pathinfo( $filename );
 	$dir  = $info['dirname'] ? $info['dirname'] . DIRECTORY_SEPARATOR : '';
 
 	return $dir . $info['filename'] . '.' . $new_extension;
@@ -168,7 +185,7 @@ function get_url_arg( string $url, string $arg ): ?string {
 
 	$query_string = parse_url( $url, PHP_URL_QUERY );
 
-	if ( empty( $query_string ) || ! is_string( $query_string ) ) {
+	if ( empty( $query_string ) ) {
 		return null;
 	}
 

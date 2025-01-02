@@ -1,4 +1,7 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types = 1);
+
 namespace Nextgenthemes\ARVE;
 
 use function Nextgenthemes\WP\register_asset;
@@ -25,7 +28,7 @@ function register_assets(): void {
 
 	if ( function_exists( 'register_block_type' ) ) :
 
-		$settings = settings( 'gutenberg_block' );
+		$settings = settings( 'gutenberg_block' )->to_array();
 		$options  = options();
 
 		foreach ( $settings as $key => $v ) {

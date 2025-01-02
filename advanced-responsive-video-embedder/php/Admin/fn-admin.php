@@ -1,21 +1,22 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types = 1);
+
 namespace Nextgenthemes\ARVE\Admin;
 
 use Nextgenthemes\WP\Admin\Notices;
 
 use function Nextgenthemes\ARVE\is_gutenberg;
 use function Nextgenthemes\ARVE\settings;
-use function Nextgenthemes\ARVE\settings_sections;
+use function Nextgenthemes\ARVE\settings_tabs;
 use function Nextgenthemes\ARVE\options;
 
 use function Nextgenthemes\WP\enqueue_asset;
 use function Nextgenthemes\WP\remote_get_json_cached;
 use function Nextgenthemes\WP\str_contains_any;
 use function Nextgenthemes\WP\register_asset;
-use function Nextgenthemes\WP\get_constant;
+use function Nextgenthemes\WP\kses_https_links;
 
-use const Nextgenthemes\ARVE\PREMIUM_SECTIONS;
-use const Nextgenthemes\ARVE\PREMIUM_URL_PREFIX;
 use const Nextgenthemes\ARVE\PRO_VERSION_REQUIRED;
 use const Nextgenthemes\ARVE\PLUGIN_DIR;
 use const Nextgenthemes\ARVE\PLUGIN_FILE;
@@ -103,7 +104,7 @@ function action_admin_init_setup_messages(): void {
 					esc_url( 'https://nextgenthemes.com/support/' )
 				),
 				ALLOWED_HTML,
-				array( 'http', 'https' )
+				array( 'https' )
 			),
 			array(
 				'cap' => 'install_plugins',
@@ -126,7 +127,7 @@ function action_admin_init_setup_messages(): void {
 					esc_url( 'https://wordpress.org/news/2024/07/wordpress-6-6-rc2/' )
 				),
 				ALLOWED_HTML,
-				array( 'http', 'https' )
+				array( 'https' )
 			),
 			array(
 				'cap' => 'install_plugins',
@@ -161,7 +162,7 @@ function action_admin_init_setup_messages(): void {
 					esc_url( 'https://wordpress.org/news/2024/07/wordpress-6-6-rc2/' )
 				),
 				ALLOWED_HTML,
-				array( 'http', 'https' )
+				array( 'https' )
 			),
 			array(
 				'cap' => 'install_plugins',
@@ -176,18 +177,12 @@ function action_admin_init_setup_messages(): void {
 			'aio-seo-notice',
 			'notice-info',
 			sprintf(
-				wp_kses(
+				kses_https_links(
 					// Translators: %s URL
 					__(
 						'There is compatibility issue with All In One SEO Pack effecting ARVE. With the AIO-SEO plugin active the "Embed Video (ARVE)" button will not work in Classic Editor. Please contact the AIO-SEO plugin <a href="%1$s">support</a> / <a href="%2$s">support for pro users</a> if they can fix this issue.',
 						'advanced-responsive-video-embedder'
 					),
-					array(
-						'a' => array(
-							'href' => array(),
-						),
-					),
-					array( 'https' )
 				),
 				'https://wordpress.org/support/plugin/all-in-one-seo-pack/#new-topic-0',
 				'https://aioseo.com/login/?redirect_to=%2Faccount%2Fsupport%2F'
@@ -272,7 +267,7 @@ function widget_text(): void {
 
 function register_shortcode_ui(): void {
 
-	$settings = settings( 'shortcode' );
+	$settings = settings( 'shortcode' )->to_array();
 
 	foreach ( $settings as $k => $v ) :
 
@@ -303,7 +298,10 @@ function register_shortcode_ui(): void {
 		}
 
 		if ( 'thumbnail' === $k ) {
-			$v['type'] = 'attachment';
+			$v['type']        = 'attachment';
+			$v['libraryType'] = array( 'image' );
+			$v['addButton']   = __( 'Select Image', 'advanced-responsive-video-embedder' );
+			$v['frameTitle']  = __( 'Select Image', 'advanced-responsive-video-embedder' );
 		}
 
 		if ( ! empty( $v['placeholder'] ) ) {
@@ -358,20 +356,9 @@ function add_action_links( array $links ): array {
 		$extra_links['buy_pro_addon'] = sprintf(
 			'<a href="%s"><strong style="display: inline;">%s</strong></a>',
 			'https://nextgenthemes.com/plugins/arve-pro/',
-			__( 'Buy Pro Addon', 'advanced-responsive-video-embedder' )
+			__( 'Get Lazyload, Lightbox and more', 'advanced-responsive-video-embedder' )
 		);
 	}
-
-	$extra_links['donate'] = sprintf(
-		'<a href="https://nextgenthemes.com/donate/"><strong style="display: inline;">%s</strong></a>',
-		esc_html__( 'Donate', 'advanced-responsive-video-embedder' )
-	);
-
-	$extra_links['settings'] = sprintf(
-		'<a href="%s">%s</a>',
-		esc_url( admin_url( 'options-general.php?page=nextgenthemes_arve' ) ),
-		esc_html__( 'Settings', 'advanced-responsive-video-embedder' )
-	);
 
 	return array_merge( $extra_links, $links );
 }
@@ -401,17 +388,15 @@ function get_first_glob( string $pattern ): string {
 
 function admin_enqueue_scripts(): void {
 
-	foreach ( settings( 'shortcode' ) as $k => $v ) {
+	foreach ( settings( 'shortcode' )->get_all() as $k => $v ) {
 		$options[ $k ] = '';
 	}
 
 	$settings_data = array(
 		'options'          => $options,
 		'nonce'            => wp_create_nonce( 'wp_rest' ),
-		'settings'         => settings( 'shortcode' ),
-		'sections'         => settings_sections(),
-		'premiumSections'  => PREMIUM_SECTIONS,
-		'premiumUrlPrefix' => PREMIUM_URL_PREFIX,
+		'settings'         => settings( 'shortcode' )->to_array(),
+		'tabs'             => settings_tabs(),
 	);
 
 	if ( ! is_gutenberg() ) {

@@ -69,12 +69,12 @@
         },
         {
             "name": "nextgenthemes/wp-shared",
-            "version": "2024.12.05.14.18.58",
-            "version_normalized": "2024.12.05.14.18.58",
+            "version": "2025.01.02.11.14.30",
+            "version_normalized": "2025.01.02.11.14.30",
             "dist": {
                 "type": "path",
-                "url": "../nextgenthemes/wp-shared",
-                "reference": "8ae90d30b73017d4eafb55cef6b156380ed0dd7e"
+                "url": "../../../../../../dev/composer-packages/wp-shared",
+                "reference": "390b98aecf65022c15867e66fb56166cd26cfdf8"
             },
             "require": {
                 "php": ">=7.4"
@@ -83,8 +83,7 @@
             "installation-source": "dist",
             "autoload": {
                 "files": [
-                    "includes/WP/load-files.php",
-                    "includes/WP/Admin/load-admin-files.php"
+                    "includes/WP/init.php"
                 ]
             },
             "license": [

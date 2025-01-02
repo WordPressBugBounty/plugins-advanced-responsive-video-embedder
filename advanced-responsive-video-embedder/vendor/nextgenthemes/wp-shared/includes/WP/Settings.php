@@ -1,11 +1,13 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types = 1);
+
 namespace Nextgenthemes\WP;
 
-use Exception;
 use function wp_interactivity_data_wp_context as data_wp_context;
 
 class Settings {
-	private static $no_reset_sections = array( 'debug', 'random-video', 'keys' );
+	private static $no_reset_sections = array( 'random-video', 'keys' );
 
 	private string $menu_parent_slug = 'options-general.php';
 	private string $menu_title;
@@ -16,33 +18,30 @@ class Settings {
 	private string $rest_namespace;
 	private string $base_path;
 	private string $base_url;
-	private string $premium_url_prefix = '';
+	private ?string $plugin_file;
+	private array $tabs;
 
-	private array $sections = array( 'main' => 'Main' );
 	private array $options;
 	private array $options_defaults;
 	private array $options_defaults_by_section;
-	private array $premium_sections = array();
-	private array $settings;
+
+	/**
+	 * Each setting is a SettingValidator object
+	 *
+	 * @var SettingsData <string, SettingValidator>
+	 */
+	private SettingsData $settings;
 	private array $defined_keys = array();
 
 	public function __construct( array $args ) {
 
-		$optional_args = [ 'menu_parent_slug', 'sections', 'premium_sections', 'premium_url_prefix' ];
-
-		foreach ( $optional_args as $optional_arg ) {
-
-			if ( isset( $args[ $optional_arg ] ) ) {
-				$this->$optional_arg = $args[ $optional_arg ];
-			}
-		}
-
-		$this->base_url  = trailingslashit( $args['base_url'] );
-		$this->base_path = trailingslashit( $args['base_path'] );
-
-		$this->settings            = $args['settings'];
-		$this->sections            = $args['sections'];
+		$this->menu_parent_slug    = $args['menu_parent_slug'] ?? $this->menu_parent_slug;
+		$this->base_url            = trailingslashit( $args['base_url'] );
+		$this->base_path           = trailingslashit( $args['base_path'] );
+		$this->plugin_file         = $args['plugin_file'] ?? null;
+		$this->tabs                = $args['tabs'];
 		$this->menu_title          = $args['menu_title'];
+		$this->settings            = $args['settings'];
 		$this->settings_page_title = $args['settings_page_title'];
 		$this->slugged_namespace   = \sanitize_key( str_replace( '\\', '_', $args['namespace'] ) );
 		$this->camel_namespace     = camel_case( \sanitize_key( $this->slugged_namespace ), '\\' );
@@ -57,6 +56,48 @@ class Settings {
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ), 9 );
 		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );
 		add_action( 'admin_menu', array( $this, 'register_setting_page' ) );
+
+		if ( $this->plugin_file ) {
+			add_filter( 'plugin_action_links_' . plugin_basename( $this->plugin_file ), array( $this, 'add_action_links' ), 5, 1 );
+		}
+	}
+
+	public function add_action_links( array $links ): array {
+
+		$default_headers = array(
+			'ActionLink'  => 'Action Link',
+		);
+
+		$plugin_data = get_file_data( $this->plugin_file, $default_headers, 'plugin' );
+
+		if ( ! empty( $plugin_data['ActionLink'] ) ) {
+			preg_match( '/(?<text>.*?)(?<url>https\S+)/i', $plugin_data['ActionLink'], $matches );
+		}
+
+		if ( ! empty( $matches['url'] ) && ! empty( $matches['text'] ) ) {
+			$extra_links['ngt-action-link'] = sprintf(
+				'<a href="%s"><strong style="display: inline;">%s</strong></a>',
+				esc_url( $matches['url'] ),
+				esc_html( $matches['text'] )
+			);
+		}
+
+		$extra_links['ngt-settings'] = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( admin_url( 'options-general.php?page=' . $this->slugged_namespace ) ),
+			esc_html__( 'Settings' ) // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+		);
+
+		return array_merge( $extra_links, $links );
+	}
+
+	private function check_option_and_shortcode( array $setting ): void {
+
+		if ( 'nextgenthemes_arve' === $this->slugged_namespace
+			&& ( ! isset( $setting['option'] ) || ! isset( $setting['shortcode'] ) )
+		) {
+			wp_trigger_error( __METHOD__, 'option or shortcode must be set in ARVE' );
+		}
 	}
 
 	public function setup_license_options(): void {
@@ -71,15 +112,9 @@ class Settings {
 
 	private function set_default_options(): void {
 
-		foreach ( $this->settings as $key => $setting ) {
-
-			if ( gettype( $setting['default'] ) !== $setting['type'] ) {
-				unset( $this->settings[ $key ] );
-				wp_trigger_error( __FUNCTION__, "Default value for '$key' has wring type" );
-			}
-
-			$this->options_defaults[ $key ] = $setting['default'];
-			$this->options_defaults_by_section[ $setting['tag'] ][$key] = $setting['default'];
+		foreach ( $this->settings->get_all() as $key => $setting ) {
+			$this->options_defaults[ $key ]                             = $setting->default;
+			$this->options_defaults_by_section[ $setting->tab ][ $key ] = $setting->default;
 		}
 	}
 
@@ -127,6 +162,10 @@ class Settings {
 		return $this->options_defaults;
 	}
 
+	public function get_settings(): SettingsData {
+		return $this->settings;
+	}
+
 	public function save_options( array $options ): void {
 		// remove all items from options that are not also in defaults.
 		$options = array_diff_assoc( $options, $this->options_defaults );
@@ -144,13 +183,13 @@ class Settings {
 			'/save',
 			array(
 				'methods'             => 'POST',
-				'args'                => $this->settings,
-				'permission_callback' => function() {
+				'args'                => $this->settings->to_array(),
+				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
-				'callback'            => function( \WP_REST_Request $request ): \WP_REST_Response {
+				'callback'            => function ( \WP_REST_Request $request ): \WP_REST_Response {
 					$this->save_options( $request->get_params() );
-					return rest_ensure_response( __( 'Options saved', 'nextgenthemes' ) );
+					return rest_ensure_response( __( 'Options saved', 'advanced-responsive-video-embedder' ) );
 				},
 			)
 		);
@@ -160,34 +199,34 @@ class Settings {
 			$this->rest_namespace,
 			'/edd-license-action',
 			array(
-				'methods' => 'POST',
-				'args'    => array(
+				'methods'             => 'POST',
+				'args'                => array(
 					'edd_store_url' => array(
-						'type' => 'string',
-						'required' => true
+						'type'     => 'string',
+						'required' => true,
 					),
 					'option_key' => array(
-						'type' => 'string',
-						'required' => true
+						'type'     => 'string',
+						'required' => true,
 					),
 					// edd api args below
 					'edd_action' => array(
-						'type' => 'string',
-						'required' => true
+						'type'     => 'string',
+						'required' => true,
 					),
 					'item_id' => array(
-						'type' => 'integer',
-						'required' => true
+						'type'     => 'integer',
+						'required' => true,
 					),
 					'license' => array(
-						'type' => 'string',
-						'required' => true
-					)
+						'type'     => 'string',
+						'required' => true,
+					),
 				),
-				'permission_callback' => function() {
+				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
-				'callback'            => function( \WP_REST_Request $request ) {
+				'callback'            => function ( \WP_REST_Request $request ) {
 
 					$p = $request->get_params();
 
@@ -212,13 +251,13 @@ class Settings {
 				'/delete-oembed-cache',
 				array(
 					'methods'             => 'POST',
-					'permission_callback' => function() {
-						return true;
+					'permission_callback' => function () {
+						#return true;
 						return current_user_can( 'manage_options' );
 					},
-					'callback'            => function(): \WP_REST_Response {
+					'callback'            => function (): \WP_REST_Response {
 						return rest_ensure_response( \Nextgenthemes\ARVE\delete_oembed_cache() );
-					}
+					},
 				)
 			);
 		}
@@ -232,8 +271,8 @@ class Settings {
 		wp_register_script_module(
 			'nextgenthemes-settings',
 			$this->base_url . 'vendor/nextgenthemes/wp-shared/includes/WP/Admin/settings.js',
-			$asset_info[ 'dependencies' ] + [ '@wordpress/interactivity' ],
-			$asset_info[ 'version' ]
+			$asset_info['dependencies'] + [ '@wordpress/interactivity' ],
+			$asset_info['version']
 		);
 
 		// always register this as the ARVE Shortcode dialog uses styles from this.
@@ -258,18 +297,18 @@ class Settings {
 
 		wp_enqueue_media();
 
-		$sections_camel_keys = array_map_key( 'Nextgenthemes\WP\camel_case', $this->sections );
-		$active_tabs = array_map( '__return_false', $sections_camel_keys );
-	
+		$sections_camel_keys = array_map_key( 'Nextgenthemes\WP\camel_case', $this->tabs );
+		$active_tabs         = array_map( '__return_false', $sections_camel_keys );
+
 		$active_tabs[ array_key_first( $active_tabs ) ] = true;
 
 		wp_interactivity_config(
 			$this->slugged_namespace,
 			[
-				'restUrl' => get_rest_url( null, $this->rest_namespace ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
-				'siteUrl' => get_site_url(),
-				'homeUrl' => get_home_url(),
+				'restUrl'        => get_rest_url( null, $this->rest_namespace ),
+				'nonce'          => wp_create_nonce( 'wp_rest' ),
+				'siteUrl'        => get_site_url(),
+				'homeUrl'        => get_home_url(),
 				'defaultOptions' => $this->options_defaults_by_section,
 			]
 		);
@@ -289,34 +328,33 @@ class Settings {
 		<div 
 			class="wrap wrap--nextgenthemes"
 			data-wp-interactive="<?= esc_attr( $this->slugged_namespace ); ?>"
-			<?= data_wp_context(
+			<?=
+			data_wp_context( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				[
 					'activeTabs' => $active_tabs,
-					'help'       => true
+					'help'       => true,
 				]
-			); ?>
+			);
+			?>
 		>
 			<h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
 
 			<?php if ( is_plugin_active( 'all-in-one-seo-pack/all_in_one_seo_pack.php' ) ) : ?>
 				<p class="ngt-sidebar-box">
 					<strong>
-						<?= sprintf(
-							wp_kses(
+						<?php
+						printf(
+							kses_https_link(
+								// translators: %1$s and %2$s are links
 								__(
 									'There is a compatibility issue with the All in One SEO Pack plugin that prevents this settings page from working. Please deactivate All in One SEO Pack temporarily to make ARVE Settings and contact their <a href="%1$s">support</a> / <a href="%2$s">support for pro users</a> to ask them if they can resolve this issue.',
 									'advanced-responsive-video-embedder'
 								),
-								array(
-									'a' => array(
-										'href' => array()
-									)
-								),
-								array( 'https' )
 							),
 							'https://wordpress.org/support/plugin/all-in-one-seo-pack/#new-topic-0',
 							'https://aioseo.com/login/?redirect_to=%2Faccount%2Fsupport%2F'
-						); ?>
+						);
+						?>
 					</strong>
 				</p>
 			<?php endif; ?>
@@ -327,9 +365,9 @@ class Settings {
 						class="nav-tab"
 						data-wp-on--click="actions.changeTab"
 						data-wp-class--nav-tab-active="context.activeTabs.<?= esc_attr( $k ); ?>"
-						<?= data_wp_context( [ 'section' => $k ] ); // phpcs:ignore ?>
+						<?= data_wp_context( [ 'tab' => $k ] ); // phpcs:ignore ?>
 					>
-						<?= esc_html( $v); ?>
+						<?= esc_html( $v['title'] ); ?>
 					</button>
 				<?php endforeach; ?>
 			</h2>
@@ -343,9 +381,7 @@ class Settings {
 
 					Admin\print_settings_blocks(
 						$this->settings,
-						$this->sections,
-						$this->premium_sections,
-						$this->premium_url_prefix
+						$this->tabs
 					);
 
 					$this->print_reset_buttons();
@@ -365,6 +401,7 @@ class Settings {
 		</div>
 
 		<?php
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo wp_interactivity_process_directives( ob_get_clean() );
 	}
 
@@ -372,9 +409,11 @@ class Settings {
 		?>
 		<p>
 			<?php
-			foreach ( $this->sections as $key => $label ) {
+			foreach ( $this->tabs as $key => $tab ) {
 
-				if ( in_array( $key, self::$no_reset_sections, true ) ) {
+				$reset_btn = $tab['reset_button'] ?? true;
+
+				if ( ! $reset_btn ) {
 					continue;
 				}
 
@@ -382,15 +421,15 @@ class Settings {
 				<button
 					class="button button-secondary"
 					type="button"
-					data-wp-bind--hidden="!state.isActiveSection"
+					data-wp-bind--hidden="!state.isActiveTab"
 					data-wp-on--click="actions.resetOptionsSection"
-					<?= data_wp_context( [ 'section' => $key ] ); // phpcs:ignore ?>
+					<?= data_wp_context( [ 'tab' => $key ] ); // phpcs:ignore ?>
 				>
 					<?php
 					printf(
 						// translators: Options section
 						esc_html__( 'Reset %s section', 'advanced-responsive-video-embedder' ),
-						$label
+						esc_html( $tab['title'] )
 					);
 					?>
 				</button>

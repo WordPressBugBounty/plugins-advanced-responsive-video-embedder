@@ -5,7 +5,7 @@ Tags: embed, video, lazyload, lightbox, rumble
 Requires at least: 6.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 10.4.0
+Stable tag: 10.5.0
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -192,6 +192,12 @@ Please read the [official documentation](https://wordpress.org/support/article/m
 
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
+
+### 2024-01-02 10.5.0 ###
+
+* New: Debug option to control src mismatch errors.
+* Improved: Removed the debug into in favor or adding data to the Site Health Info screen.
+* Improved: Introduced a `SettingsData` and `SettingValidator` classes to make the code more robust self testing.
 
 ### 2024-12-05 10.4.0 ###
 
