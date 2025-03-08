@@ -13,7 +13,7 @@
         "vimeo",
         "odysee"
     ],
-    "version": "10.5.4",
+    "version": "10.6.0",
     "textdomain": "advanced-responsive-video-embedder",
     "supports": {
         "align": [
@@ -32,7 +32,13 @@
         }
     },
     "editorScript": "arve-block",
-    "editorStyle": "arve-block",
+    "editorStyle": [
+        "arve-block",
+        "arve",
+        "arve-pro",
+        "arve-sticky-videos",
+        "arve-random-video"
+    ],
     "viewScript": [
         "arve",
         "arve-pro",
@@ -68,6 +74,9 @@
             "type": "string"
         },
         "mode": {
+            "type": "string"
+        },
+        "lazyload_style": {
             "type": "string"
         },
         "thumbnail": {

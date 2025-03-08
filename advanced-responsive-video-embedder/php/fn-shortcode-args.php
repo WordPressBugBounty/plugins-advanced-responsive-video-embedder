@@ -41,9 +41,9 @@ function arg_mode( string $mode ): string {
 		$mode = 'lazyload';
 	}
 
-	if ( 'normal' !== $mode &&
-		! defined( '\Nextgenthemes\ARVE\Pro\VERSION' ) ) {
-
+	if ( 'normal' !== $mode
+		&& ! has_action( 'plugins_loaded', 'Nextgenthemes\ARVE\Pro\init' )
+	) {
 		$err_msg = sprintf(
 			// Translators: Mode
 			__( 'Mode: %s not available (ARVE Pro not active?), switching to normal mode', 'advanced-responsive-video-embedder' ),
@@ -59,7 +59,7 @@ function arg_mode( string $mode ): string {
 function compare_oembed_src_with_generated_src( string $src, string $src_gen, string $provider, string $url ): void {
 
 	$options       = options();
-	$always        = 'always' === $options['show_src_mismatch_errors'];
+	$always        = 'cli' === PHP_SAPI || 'always' === $options['show_src_mismatch_errors'];
 	$dev_mode_only = is_dev_mode() && 'dev-mode' === $options['show_src_mismatch_errors'];
 
 	if ( empty( $src )
@@ -221,16 +221,11 @@ function special_iframe_src_mods( string $src, string $provider, string $url, bo
 
 			break;
 		case 'vimeo':
-			$src = add_query_arg( 'dnt', 1, $src );
+			$fragment = (string) wp_parse_url( $url, PHP_URL_FRAGMENT );
 
-			$parsed_url = wp_parse_url( $url );
-
-			if ( ! empty( $parsed_url['fragment'] ) && str_starts_with( $parsed_url['fragment'], 't' ) ) {
-				$src .= '#' . $parsed_url['fragment'];
+			if ( str_starts_with( $fragment, 't' ) ) {
+				$src .= '#' . $fragment;
 			}
-			break;
-		case 'wistia':
-			$src = add_query_arg( 'dnt', 1, $src );
 			break;
 	}
 
@@ -338,7 +333,7 @@ function get_video_type( string $ext ): string {
 
 function iframesrc_urlarg_enablejsapi( string $src, string $provider ): string {
 
-	if ( function_exists( 'Nextgenthemes\ARVE\Pro\init' ) && 'youtube' === $provider ) {
+	if ( function_exists( __NAMESPACE__ . '\Pro\init' ) && 'youtube' === $provider ) {
 		$src = add_query_arg( array( 'enablejsapi' => 1 ), $src );
 	}
 

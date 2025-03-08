@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace Nextgenthemes\ARVE;
 
-use function Nextgenthemes\WP\is_wp_debug;
+use WP_Error;
 use const Nextgenthemes\ARVE\ALLOWED_HTML;
 
 /**
@@ -15,7 +15,6 @@ use const Nextgenthemes\ARVE\ALLOWED_HTML;
  */
 function shortcode( array $a ) {
 
-	$a['errors']              = new \WP_Error();
 	$a['origin_data']['from'] = 'shortcode';
 
 	foreach ( $a as $k => $v ) {
@@ -41,8 +40,11 @@ function shortcode( array $a ) {
 		$oembed_data = extract_oembed_data( $maybe_arve_html );
 
 		if ( $oembed_data ) {
-			$a['oembed_data']         = $oembed_data;
-			$a['origin_data']['from'] = 'shortcode oembed_data detected';
+			$a['oembed_data'] = $oembed_data;
+			$a['origin_data'] = array(
+				'from'  => 'shortcode oembed_data detected',
+				'cache' => delete_oembed_caches_when_missing_data( $oembed_data ),
+			);
 		}
 	}
 
@@ -51,7 +53,7 @@ function shortcode( array $a ) {
 
 function is_dev_mode(): bool {
 	return (
-		( defined( 'WP_DEBUG' ) && \WP_DEBUG )
+		( defined( 'WP_DEBUG' ) && WP_DEBUG )
 		|| wp_get_development_mode()
 		|| 'development' === wp_get_environment_type()
 		|| 'local' === wp_get_environment_type()
@@ -113,10 +115,6 @@ function get_error_html(): string {
  * @return string|WP_REST_Response The built video.
  */
 function build_video( array $input_atts ) {
-
-	if ( ! empty( $input_atts['errors'] ) ) {
-		arve_errors()->merge_from( $input_atts['errors'] );
-	}
 
 	// If maxwidth is not set, use width as alias
 	if ( empty( $input_atts['maxwidth'] ) && ! empty( $input_atts['width'] ) ) {

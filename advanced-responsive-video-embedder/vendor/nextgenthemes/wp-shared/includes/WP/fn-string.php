@@ -4,6 +4,66 @@ declare(strict_types = 1);
 
 namespace Nextgenthemes\WP;
 
+use WP_HTML_Tag_Processor;
+
+/**
+ * Adds, updates or removes attributes to the first HTML tag passed in.
+ *
+ * @param string $html The HTML string, e.g. <div>...</div>.
+ * @param array  $attr A list of HTML attributes, e.g. class, src, href, etc.
+ *
+ * @return string The updated HTML updated as string.
+ */
+function first_tag_attr( string $html, array $attr ): string {
+
+	$p = new WP_HTML_Tag_Processor( $html );
+
+	if ( ! $p->next_tag() ) {
+		wp_trigger_error( __FUNCTION__, 'WP_HTML_Tag_Processor::next_tag() failed' );
+		return $p->get_updated_html();
+	}
+
+	apply_attr( $p, $attr );
+
+	return $p->get_updated_html();
+}
+
+/**
+ * Applies attributes to the first HTML tag the processor is currently on.
+ *
+ * @param WP_HTML_Tag_Processor $p     The tag processor.
+ * @param array                 $attr  A list of HTML attributes, e.g. class, src, href, etc.
+ *
+ * @return WP_HTML_Tag_Processor The tag processor.
+ */
+function apply_attr( WP_HTML_Tag_Processor $p, array $attr ): WP_HTML_Tag_Processor {
+
+	if ( ! $p->get_tag() ) {
+		wp_trigger_error( __FUNCTION__, 'Not currently on a tag' );
+		return $p->get_updated_html();
+	}
+
+	foreach ( $attr as $key => $value ) {
+
+		if ( null === $value ) {
+			$value = false;
+		}
+
+		if ( ! is_scalar( $value ) ) {
+			wp_trigger_error( __FUNCTION__, 'value must be null or scalar' );
+			continue;
+		}
+
+		if ( 'class' === $key && $value ) {
+			$p->add_class( $value );
+		} else {
+			$p->set_attribute( $key, $value );
+		}
+	}
+
+	return $p;
+}
+
 /**
  * Get the value of a specific attribute from an HTML string.
  *
@@ -14,7 +74,7 @@ namespace Nextgenthemes\WP;
  */
 function get_attribute_from_html_tag( array $query, string $attribute, string $html ): ?string {
 
-	$wphtml = new \WP_HTML_Tag_Processor( $html );
+	$wphtml = new WP_HTML_Tag_Processor( $html );
 
 	if ( $wphtml->next_tag( $query ) ) {
 
@@ -192,4 +252,24 @@ function get_url_arg( string $url, string $arg ): ?string {
 	parse_str( $query_string, $query_args );
 
 	return $query_args[ $arg ] ?? null;
+}
+
+/**
+ * Replaces links in the given text with the given replacement, unless the link ends with a period.
+ *
+ * @see https://regex101.com/r/aElNTt/8
+ *
+ * @param string $text The text containing the links to replace.
+ * @param string $replacement The string to replace the links with.
+ * @return string The modified text with the replaced links.
+ */
+function replace_links( string $text, string $replacement ): string {
+
+	$pattern = '/https?:\/\/[\S]+|[a-z0-9-]+\.[a-z0-9-]+\S*/i';
+
+	return preg_replace_callback(
+		$pattern,
+		fn ( $matches ) => str_ends_with( $matches[0], '.' ) ? $matches[0] : $replacement,
+		$text
+	);
 }

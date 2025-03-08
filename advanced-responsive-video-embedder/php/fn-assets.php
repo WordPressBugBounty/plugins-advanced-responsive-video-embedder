@@ -32,12 +32,8 @@ function register_assets(): void {
 		$options  = options();
 
 		foreach ( $settings as $key => $v ) {
-			if ( $options['gutenberg_help'] && ! empty( $v['description'] ) ) {
-				$settings[ $key ]['description'] = wp_strip_all_tags( $v['description'] );
-			} else {
+			if ( ! $options['gutenberg_help'] ) {
 				unset( $settings[ $key ]['description'] );
-				unset( $settings[ $key ]['descriptionlink'] );
-				unset( $settings[ $key ]['descriptionlinktext'] );
 			}
 		}
 
@@ -93,7 +89,7 @@ function action_wp_enqueue_scripts(): void {
 function gutenberg_block( array $attr ): string {
 
 	if ( empty( $attr['url'] ) && empty( $attr['random_video_url'] ) && empty( $attr['random_video_urls'] ) ) {
-		\ob_start();
+		ob_start();
 		?>
 		<div class="components-placeholder wp-block-embed">
 			<div class="components-placeholder__label">
@@ -116,7 +112,7 @@ function gutenberg_block( array $attr ): string {
 			<div class="components-placeholder__instructions">Please paste Video URL / iframe Embed Code in the Sidebar for this Block.</div>
 		</div>
 		<?php
-		return \ob_get_clean();
+		return ob_get_clean();
 	}
 
 	$attr['origin_data']['gutenberg']    = true;
