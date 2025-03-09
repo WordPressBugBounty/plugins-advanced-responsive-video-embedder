@@ -35,7 +35,7 @@ function remote_get_json_cached( string $url, array $args = array(), string $jso
 		return new WP_Error(
 			'json-decode-error',
 			sprintf(
-				// Translators: URL.
+				// Translators: %1$s URL, %2$s json_decode error
 				__( 'url: %1$s json_decode error: %2$s.', 'advanced-responsive-video-embedder' ),
 				esc_html( $url ),
 				$e->getMessage()

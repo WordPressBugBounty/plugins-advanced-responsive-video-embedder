@@ -5,7 +5,7 @@ Tags: embed, video, lazyload, lightbox, rumble
 Requires at least: 6.6
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 10.6.0
+Stable tag: 10.6.4
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -192,6 +192,17 @@ Please read the [official documentation](https://wordpress.org/support/article/m
 
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
+
+### 2025-03-09 10.6.4 ###
+
+* Fix: Link to settings page in API key notice.
+* Improved: Link to tutorial video showing you how to get an YouTube Data API key.
+
+### 2025-03-09 10.6.1 ###
+
+* Improved: Error handling. Show YouTube API errors only on the Admin screens.
+* Improved: Cache deletion.
+* New: Option to add your own YouTube Data API key to prevent limits of the one included in Pro.
 
 ### 2025-03-08 10.6.0 ###
 
