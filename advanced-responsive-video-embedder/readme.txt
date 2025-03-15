@@ -3,9 +3,9 @@ Contributors: nico23
 Donate link: https://nextgenthemes.com/donate/
 Tags: embed, video, lazyload, lightbox, rumble
 Requires at least: 6.6
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 10.6.5
+Stable tag: 10.6.6
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -184,14 +184,25 @@ Please read the [official documentation](https://wordpress.org/support/article/m
 
 ## Screenshots ##
 
-1. Shortcode dialog
-2. Main Options
-2. URL Parameter Options
-3. Pro Options
+1. Block Editor Example
+2. Shortcode creation dialog in Classic Editor
+3. Main Options
+4. Pro Options
+5. Video Files Options
+6. URL Parameter Options
 ## Changelog ##
 
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
+
+### 2025-03-15 10.6.6 ###
+
+* Improved: Tested with WP 6.8-beta2
+* Improved: Updated jetpack autoloader.
+* Improved: Cache deletion.
+* Improved: Handling of error messaged of YouTube Data API errors.
+* Abandoned asset wrappers.
+* Renamed shared code package, now [nextgenthemes/wp-settings](https://packagist.org/packages/nextgenthemes/wp-settings) on Packagist.
 
 ### 2025-03-09 10.6.5 ###
 

@@ -14,7 +14,7 @@ use function Nextgenthemes\ARVE\options;
 use function Nextgenthemes\WP\enqueue_asset;
 use function Nextgenthemes\WP\remote_get_json_cached;
 use function Nextgenthemes\WP\str_contains_any;
-use function Nextgenthemes\WP\register_asset;
+use function Nextgenthemes\WP\ver;
 
 use const Nextgenthemes\ARVE\PRO_VERSION_REQUIRED;
 use const Nextgenthemes\ARVE\PLUGIN_DIR;
@@ -27,7 +27,7 @@ function action_admin_init_setup_messages(): void {
 	if ( defined( '\Nextgenthemes\ARVE\Pro\VERSION' ) && version_compare( PRO_VERSION_REQUIRED, \Nextgenthemes\ARVE\Pro\VERSION, '>' ) ) {
 		$msg = sprintf(
 			// Translators: %1$s Pro Version required
-			__( 'Your ARVE Pro Addon is outdated, you need version %1$s or later. If you have setup your license <a href="%2$s">here</a> semi auto updates should work (Admin panel notice and auto install on confirmation). If not please <a href="%3$s">report it</a> and manually update as <a href="%4$s">described here.</a>', 'advanced-responsive-video-embedder' ),
+			__( 'Your ARVE Pro Addon is outdated, you need version %1$s or later. If you have setup your license <a href="%2$s">here</a> semi auto updates should work (Admin panel notice and auto install on confirmation). If not please manually update as <a href="%4$s">described here.</a>', 'advanced-responsive-video-embedder' ),
 			PRO_VERSION_REQUIRED,
 			esc_url( get_admin_url() . 'options-general.php?page=nextgenthemes' ),
 			'https://nextgenthemes.com/support/',
@@ -66,12 +66,13 @@ function action_admin_init_setup_messages(): void {
 	}
 
 	$youtube_api_error = get_option( 'arve_youtube_api_error' );
+	delete_option( 'arve_youtube_api_error' );
 
-	if ( str_contains( (string) $youtube_api_error, '403' ) ) {
+	if ( $youtube_api_error ) {
 
-		$yt_api_error_msg = sprintf(
-			// Translators: %1$s URL to tut video, %2$s URL to ARVE settings page
-			__( 'ARVE Pro\'s included YouTube API Key limit reached, sign up for your own API key at <a href="%1$s" target="_blank">developers.google.com</a> and enter it in <a href="%2$s">ARVE Settings</a>.', 'advanced-responsive-video-embedder' ),
+		$youtube_api_error .= '<br>' . sprintf(
+			// Translators: %1$s URL to tutorial video, %2$s URL to ARVE settings page
+			__( 'A 403 error code suggests the API limit (for the included API key) is reached. <a href="%1$s" target="_blank">Sign up for your own API key</a> and enter it in <a href="%2$s">ARVE Pro Settings</a> to avoid limits.', 'advanced-responsive-video-embedder' ),
 			'https://www.youtube.com/watch?v=EPeDTRNKAVo',
 			esc_url( admin_url( 'options-general.php?page=nextgenthemes_arve' ) )
 		);
@@ -80,7 +81,7 @@ function action_admin_init_setup_messages(): void {
 			'arve_youtube_api_error',
 			'notice-error',
 			wp_kses(
-				$yt_api_error_msg,
+				$youtube_api_error,
 				ALLOWED_HTML,
 				array( 'https' )
 			),
@@ -91,7 +92,6 @@ function action_admin_init_setup_messages(): void {
 		);
 
 		Notices::instance()->restore_notice( 'arve_youtube_api_error' );
-		delete_option( 'arve_youtube_api_error' );
 	}
 
 	$object_cache_msg = get_option( 'arve_object_cache_msg' );
@@ -392,13 +392,11 @@ function admin_enqueue_styles(): void {
 		return;
 	}
 
-	enqueue_asset(
-		array(
-			'handle' => 'arve-admin',
-			'src'    => plugins_url( 'build/admin.css', PLUGIN_FILE ),
-			'path'   => PLUGIN_DIR . '/build/admin.css',
-			'deps'   => array( 'nextgenthemes-settings' ),
-		)
+	wp_enqueue_style(
+		'arve-admin',
+		plugins_url( 'build/admin.css', PLUGIN_FILE ),
+		array( 'nextgenthemes-settings' ),
+		ver( PLUGIN_DIR . '/build/admin.css', VERSION ),
 	);
 }
 
@@ -426,37 +424,29 @@ function admin_enqueue_scripts(): void {
 		'tabs'             => settings_tabs(),
 	);
 
-	if ( ! is_gutenberg() ) {
-
-		register_asset(
-			array(
-				'handle'               => 'arve-shortcode-dialog',
-				'src'                  => plugins_url( '/src/shortcode-dialog.js', PLUGIN_FILE ),
-				'path'                 => PLUGIN_DIR . '/src/shortcode-dialog.js',
-				'inline_script_before' => $settings_data,
-				'strategy'             => 'defer',
-			)
-		);
-	}
-
-	enqueue_asset(
-		array(
-			'handle'               => 'arve-admin',
-			'src'                  => plugins_url( 'build/admin.js', PLUGIN_FILE ),
-			'path'                 => PLUGIN_DIR . '/build/admin.js',
-			'inline_script_before' => 'var arveSCSettings = ' . wp_json_encode( $settings_data ) . ';',
-			'strategy'             => 'defer',
-		)
+	wp_register_script(
+		'arve-admin',
+		plugins_url( 'build/admin.js', PLUGIN_FILE ),
+		array(),
+		ver( PLUGIN_DIR . '/build/admin.js', VERSION ),
+		array( 'strategy' => 'defer' ),
 	);
 
+	wp_add_inline_script(
+		'arve-admin',
+		'var arveSCSettings = ' . wp_json_encode( $settings_data ) . ';',
+		'before'
+	);
+
+	wp_enqueue_script( 'arve-admin' );
+
 	if ( is_plugin_active( 'shortcode-ui/shortcode-ui.php' ) ) {
-		enqueue_asset(
-			array(
-				'handle' => 'arve-admin-sc-ui',
-				'path'   => PLUGIN_DIR . '/build/shortcode-ui.js',
-				'src'    => plugins_url( 'build/shortcode-ui.js', PLUGIN_FILE ),
-				'deps'   => array( 'shortcode-ui' ),
-			)
+		wp_enqueue_script(
+			'arve-admin-sc-ui',
+			plugins_url( 'build/shortcode-ui.js', PLUGIN_FILE ),
+			array( 'shortcode-ui' ),
+			ver( PLUGIN_DIR . '/build/shortcode-ui.js', VERSION ),
+			array( 'strategy' => 'defer' ),
 		);
 	}
 }
