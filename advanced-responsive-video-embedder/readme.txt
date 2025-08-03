@@ -5,7 +5,7 @@ Tags: embed, video, lazyload, lightbox, rumble
 Requires at least: 6.6
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 10.6.12
+Stable tag: 10.6.13
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -195,7 +195,13 @@ Please read the [official documentation](https://wordpress.org/support/article/m
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
 
+### 2025-07-30 10.6.13 ###
+
+* Fix: _load_textdomain_just_in_time was called incorrectly.
+* Fix: Minor visible error on debug tab with WP_DEBUG enabled.
+
 ### 2025-03-22 10.6.12 ###
+
 * Fix: HTML mistake on the setting page.
 * Improved: Hide some old errors.
 

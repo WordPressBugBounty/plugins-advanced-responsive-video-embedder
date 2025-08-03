@@ -1,9 +1,15 @@
 {
-    "packages": [
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "91159bc166283f1570929cfd93e02a88",
+    "packages": [],
+    "packages-dev": [
         {
             "name": "automattic/jetpack-autoloader",
             "version": "v5.0.9",
-            "version_normalized": "5.0.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Automattic/jetpack-autoloader.git",
@@ -25,7 +31,6 @@
                 "composer/composer": "^2.2",
                 "yoast/phpunit-polyfills": "^4.0.0"
             },
-            "time": "2025-07-28T19:49:50+00:00",
             "type": "composer-plugin",
             "extra": {
                 "class": "Automattic\\Jetpack\\Autoloader\\CustomAutoloaderPlugin",
@@ -41,7 +46,6 @@
                     "::VERSION": "src/AutoloadGenerator.php"
                 }
             },
-            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "Automattic\\Jetpack\\Autoloader\\": "src"
@@ -66,12 +70,11 @@
             "support": {
                 "source": "https://github.com/Automattic/jetpack-autoloader/tree/v5.0.9"
             },
-            "install-path": "../automattic/jetpack-autoloader"
+            "time": "2025-07-28T19:49:50+00:00"
         },
         {
             "name": "nextgenthemes/wp-settings",
             "version": "dev-master",
-            "version_normalized": "dev-master",
             "dist": {
                 "type": "path",
                 "url": "../../../../../../dev/composer-packages/wp-settings",
@@ -81,7 +84,6 @@
                 "php": ">=7.4"
             },
             "type": "library",
-            "installation-source": "dist",
             "autoload": {
                 "files": [
                     "includes/WP/init.php"
@@ -98,13 +100,22 @@
             "transport-options": {
                 "symlink": false,
                 "relative": true
-            },
-            "install-path": "../nextgenthemes/wp-settings"
+            }
         }
     ],
-    "dev": true,
-    "dev-package-names": [
-        "automattic/jetpack-autoloader",
-        "nextgenthemes/wp-settings"
-    ]
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "nextgenthemes/wp-settings": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=7.4"
+    },
+    "platform-dev": {},
+    "platform-overrides": {
+        "php": "7.4"
+    },
+    "plugin-api-version": "2.6.0"
 }
