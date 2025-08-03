@@ -72,14 +72,22 @@
             "name": "nextgenthemes/wp-settings",
             "version": "dev-master",
             "version_normalized": "dev-master",
-            "dist": {
-                "type": "path",
-                "url": "../../../../../../dev/composer-packages/wp-settings",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nextgenthemes/wp-settings.git",
                 "reference": "4e26cd875e2ba18f6f1bb523ef51d01ec7f7869d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nextgenthemes/wp-settings/zipball/4e26cd875e2ba18f6f1bb523ef51d01ec7f7869d",
+                "reference": "4e26cd875e2ba18f6f1bb523ef51d01ec7f7869d",
+                "shasum": ""
             },
             "require": {
                 "php": ">=7.4"
             },
+            "time": "2025-08-03T12:18:07+00:00",
+            "default-branch": true,
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -87,6 +95,7 @@
                     "includes/WP/init.php"
                 ]
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "GPL-3.0"
             ],
@@ -95,9 +104,8 @@
                     "name": "Nicolas Jonas"
                 }
             ],
-            "transport-options": {
-                "symlink": false,
-                "relative": true
+            "support": {
+                "source": "https://github.com/nextgenthemes/wp-settings/tree/master"
             },
             "install-path": "../nextgenthemes/wp-settings"
         }

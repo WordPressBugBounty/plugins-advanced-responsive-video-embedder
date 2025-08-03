@@ -1,21 +1,19 @@
 {
-	"name": "nextgenthemes/advanced-responsive-video-embedder",
-	"description": "ARVE Advanced Responsive Video Embedder",
+	"name": "nextgenthemes/tweakmaster",
 	"type": "wordpress-plugin",
 	"license": "GPL-3.0",
+	"description": "TweakMaster - A collection or performance, privacy, security and other tweaks..",
 	"authors": [
 		{
-			"name": "Nicolas Jonas",
-			"homepage": "https://nextgenthemes.com",
-			"role": "Developer"
+			"name": "Nicolas Jonas"
 		}
 	],
 	"require": {
 		"php": ">=7.4"
 	},
 	"require-dev": {
-		"nextgenthemes/wp-settings": "@dev",
-		"automattic/jetpack-autoloader": "^v5.0.2"
+		"automattic/jetpack-autoloader": "^v5.0.3",
+		"nextgenthemes/wp-settings": "@dev"
 	},
 	"config": {
 		"allow-plugins": {
@@ -26,29 +24,13 @@
 			"php": "7.4"
 		}
 	},
-	"repositories": {
-		"nextgenthemes/wp-settings": {
-			"type": "path",
-			"url": "../../../../../../dev/composer-packages/wp-settings",
-			"options": {
-				"symlink": false
-			}
-		}
-	},
 	"scripts": {
 		"build": [
-			"./bin/block-json",
 			"./bin/build-readme",
-			"npm run build:arve",
-			"npm run build:common",
-			"@composer update",
-			"@composer update --working-dir=tests"
-		],
-		"pre-update-cmd": [
-			"./bin/sync-wp-settings"
-		],
-		"tests": [
-			"cd ${HOME}/websites && NGT_PHPUNIT_LOAD_PLUGINS=\"advanced-responsive-video-embedder\" phpunit --testsuite advanced-responsive-video-embedder"
+			"cp ../advanced-responsive-video-embedder/bin/install-wp-tests.sh ./bin/",
+			"cp ../advanced-responsive-video-embedder/tests/phpunit-debug-helpers.php ./tests/",
+			"cp ../advanced-responsive-video-embedder/.gitignore ./",
+			"@composer update"
 		]
 	}
 }
