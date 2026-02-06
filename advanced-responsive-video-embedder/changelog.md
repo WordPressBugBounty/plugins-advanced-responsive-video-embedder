@@ -3,6 +3,32 @@
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
 
+### 2026-01-18 10.8.2 ###
+
+* New: Added `#t=0.1` to HTML5 video sources to fix Safari not showing still frames.
+
+### 2025-11-16 10.8.1 ###
+
+* Fix: Give all React elements keys to prevent console errors.
+* Fix: Show all settings in Block when settings are set to default.
+
+### 2025-11-14 10.8.0 ###
+
+* Fix: YouTube playlists 153 error on Frontend.
+* Fix: YouTube error 153 inside the Block editor.
+* Improved: Block improved, new sorting by categories.
+* Improved: Lots of code improvements.
+* New: Privacy addon feature moved to free plugin: Removes `si` parameter from YouTube URLs when doing oEmbed requests.
+
+### 2025-10-22 10.7.1 ###
+
+* Fix: SEO `uploadDate` not being in ATOM format for Vimeo.
+* Improved: `uploadDate` timezone handling. All formats that php can handle are converted to ATOM format. If timezone is not part of the string, the WordPress timezone setting is used when the time was manually entered. Otherwise UTC is used.
+* Improved: Code improvements. Thanks to phpstan and AI.
+* Improved: Viddler detection.
+* Improved: updated allow_directives.
+* Improved: removed old providers that went down.
+
 ### 2025-07-30 10.6.13 ###
 
 * Fix: _load_textdomain_just_in_time was called incorrectly.

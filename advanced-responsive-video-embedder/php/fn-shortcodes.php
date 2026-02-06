@@ -4,18 +4,18 @@ declare(strict_types = 1);
 
 namespace Nextgenthemes\ARVE;
 
-use WP_Error;
 use const Nextgenthemes\ARVE\ALLOWED_HTML;
 
 /**
  * Processes the shortcode attributes and builds the video html.
  *
- * @param array $a The array of shortcode attributes.
- * @return string|WP_REST_Response The generated video output.
+ * @param array <string, mixed> $a The array of shortcode attributes.
+ *
+ * @return string|\WP_REST_Response The generated video output.
  */
 function shortcode( array $a ) {
 
-	$a['origin_data']['from'] = 'shortcode';
+	$a['origin_data'][ __FUNCTION__ ]['start'] = 'start';
 
 	foreach ( $a as $k => $v ) {
 		if ( '' === $v ) {
@@ -41,10 +41,9 @@ function shortcode( array $a ) {
 
 		if ( $oembed_data ) {
 			$a['oembed_data'] = $oembed_data;
-			$a['origin_data'] = array(
-				'from'  => 'shortcode oembed_data detected',
-				'cache' => delete_oembed_caches_when_missing_data( $oembed_data ),
-			);
+
+			$a['origin_data'][ __FUNCTION__ ]['oembed_data'] = 'shortcode oembed_data detected';
+			$a['origin_data'][ __FUNCTION__ ]['cache']       = delete_oembed_caches_when_missing_data( $oembed_data );
 		}
 	}
 
@@ -60,59 +59,13 @@ function is_dev_mode(): bool {
 	);
 }
 
-function error( string $messages, string $code = '' ): string {
-
-	$error_html = sprintf(
-		'<div class="arve-error alignwide" data-error-code="%s">
-			 <abbr title="%s">ARVE</abbr> %s
-		</div>',
-		$code,
-		'Advanced Responsive Video Embedder',
-		// translators: Error message
-		sprintf( __( 'Error: %s', 'advanced-responsive-video-embedder' ), $messages ),
-	);
-
-	return wp_kses(
-		PHP_EOL . PHP_EOL . $error_html . PHP_EOL,
-		ALLOWED_HTML,
-		array( 'https' )
-	);
-}
-
-function get_error_html(): string {
-
-	$html     = '';
-	$messages = '';
-
-	foreach ( arve_errors()->get_error_codes() as $code ) {
-
-		$message = '';
-
-		foreach ( arve_errors()->get_error_messages( $code ) as $key => $message ) {
-			$messages .= sprintf( '%s<br>', $message );
-		}
-
-		$html .= $messages;
-		$data  = arve_errors()->get_error_data( $code );
-
-		if ( ! empty( $data ) && is_dev_mode() ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
-			$html .= sprintf( '<pre>%s</pre>', var_export( $data, true ) );
-		}
-
-		$html = error( $html );
-
-		arve_errors()->remove( $code );
-	}
-
-	return $html;
-}
 
 /**
  * Builds a video based on the input attributes.
  *
- * @param array $input_atts The input attributes for the video.
- * @return string|WP_REST_Response The built video.
+ * @param array <string, mixed> $input_atts The input attributes for the video.
+ *
+ * @return string|\WP_REST_Response The built video.
  */
 function build_video( array $input_atts ) {
 
@@ -125,8 +78,12 @@ function build_video( array $input_atts ) {
 	return $video->build_video();
 }
 
+/**
+ * @return array <string, mixed>
+ */
 function shortcode_option_defaults(): array {
 
+	$shortcodes = array();
 	$properties = get_host_properties();
 	unset( $properties['video'] );
 
@@ -142,37 +99,49 @@ function shortcode_option_defaults(): array {
 
 function create_shortcodes(): void {
 
-	$options    = options();
-	$properties = get_host_properties();
-
-	if ( $options['legacy_shortcodes'] ) {
-
-		$shortcode_options = wp_parse_args( get_option( 'arve_options_shortcodes', array() ), shortcode_option_defaults() );
-
-		foreach ( $shortcode_options as $provider => $shortcode ) {
-
-			$function = function ( $a ) use ( $provider, $properties ) {
-
-				$a['provider'] = $provider;
-
-				if ( ! empty( $properties[ $provider ]['rebuild_url'] ) && ! empty( $a['id'] ) ) {
-					$a['url'] = sprintf( $properties[ $provider ]['rebuild_url'], $a['id'] );
-					unset( $a['id'] );
-					$a['origin_data']['from'] = 'create_shortcodes rebuild_url';
-					return shortcode( $a );
-				} else {
-					$a['origin_data']['from'] = 'create_shortcodes';
-					return build_video( $a );
-				}
-			};
-
-			add_shortcode( $shortcode, $function );
-		}
-	}
+	$options = options();
 
 	add_shortcode( 'arve', __NAMESPACE__ . '\shortcode' );
+
+	if ( $options['legacy_shortcodes'] ) {
+		create_legacy_shortcodes();
+	}
 }
 
+function create_legacy_shortcodes(): void {
+
+	$properties        = get_host_properties();
+	$shortcode_options = wp_parse_args( get_option( 'arve_options_shortcodes', array() ), shortcode_option_defaults() );
+
+	foreach ( $shortcode_options as $provider => $shortcode ) {
+
+		$closure_name = __FUNCTION__ . '__closure';
+		$function     = function ( $a ) use ( $provider, $properties, $closure_name ) {
+
+			$a['provider'] = $provider;
+
+			if ( ! empty( $properties[ $provider ]['rebuild_url'] ) && ! empty( $a['id'] ) ) {
+
+				$a['url'] = sprintf( $properties[ $provider ]['rebuild_url'], $a['id'] );
+				unset( $a['id'] );
+				$a['origin_data'][ $closure_name ]['rebuild_url'] = 'rebuild_url';
+
+				return shortcode( $a );
+			} else {
+
+				$a['origin_data'][ $closure_name ]['create_legacy_shortcodes'] = 'create_legacy_shortcodes';
+
+				return build_video( $a );
+			}
+		};
+
+		add_shortcode( $shortcode, $function );
+	}
+}
+
+/**
+ * @param array <string, string> $attr
+ */
 function wp_video_shortcode_override( string $out, array $attr ): string {
 
 	$options = options();

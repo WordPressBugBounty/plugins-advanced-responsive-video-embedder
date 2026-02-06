@@ -9,9 +9,13 @@ use WP_HTML_Tag_Processor;
 use function Nextgenthemes\WP\first_tag_attr;
 
 /**
- * Undocumented function
- *
- * @param array <int, Array> $tracks
+ * @param array <int, array{
+ *     default: bool,
+ *     kind: string,
+ *     label: string,
+ *     src: string,
+ *     srclang: string
+ * }> $tracks
  */
 function tracks_html( array $tracks ): string {
 	$html = '';
@@ -62,4 +66,37 @@ function remove_embed_block_aspect_ratio( string $block_content ): string {
 	}
 
 	return $p->get_updated_html();
+}
+
+function error_wrap( string $message, string $code = '' ): string {
+
+	$error_html = sprintf(
+		'<div class="arve-error" data-error-code="%s">%s</div>',
+		esc_attr( $code ),
+		$message
+	);
+
+	return wp_kses(
+		PHP_EOL . $error_html,
+		ALLOWED_HTML,
+		array( 'https' )
+	);
+}
+
+/**
+ * Wrap content in a styled pre element
+ *
+ * @param string  $content  The content to wrap in a pre element.
+ *
+ * @return string  HTML with styled pre element
+ */
+function debug_pre( string $content, bool $dark = false ): string {
+
+	return sprintf(
+		'<pre class="%s alignfull">' .
+			'<code class="language-php">%s</code>' .
+		'</pre>',
+		$dark ? 'arve-debug arve-debug--dark' : 'arve-debug',
+		esc_html( $content )
+	);
 }

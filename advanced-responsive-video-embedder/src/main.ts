@@ -18,7 +18,7 @@ domReady( () => {
 
 // Mitigation for outdated versions of fitvids
 if ( jq && typeof jq.fn.fitVids !== 'undefined' ) {
-	jq( document ).ready( () => {
+	jq( d ).ready( () => {
 		setTimeout( () => {
 			removeUnwantedStuff();
 		}, 1 );
@@ -27,7 +27,7 @@ if ( jq && typeof jq.fn.fitVids !== 'undefined' ) {
 
 function removeUnwantedStuff(): void {
 	qsa(
-		'.arve p, .arve .video-wrap, .arve .fluid-width-video-wrapper, .arve .fluid-vids'
+		'.arve p:not(.arve-error p), .arve .video-wrap, .arve .fluid-width-video-wrapper, .arve .fluid-vids'
 	).forEach( ( el ) => {
 		unwrap( el );
 	} );
@@ -46,7 +46,7 @@ function removeUnwantedStuff(): void {
 	} );
 }
 
-export function globalID(): void {
+function globalID(): void {
 	// Usually the id should be already there added with php using the language_attributes filter
 	if ( 'html' === d.documentElement.id ) {
 		return;

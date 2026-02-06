@@ -5,7 +5,7 @@ declare(strict_types = 1);
 namespace Nextgenthemes\ARVE;
 
 /**
- * @return array <string, any>
+ * @return array <int|string, mixed>
  */
 function url_query_array( string $url ): array {
 
@@ -14,6 +14,8 @@ function url_query_array( string $url ): array {
 	if ( empty( $url['query'] ) ) {
 		return array();
 	}
+
+	$url_params = array();
 
 	parse_str( $url['query'], $url_params );
 
@@ -29,6 +31,8 @@ function get_language_name_from_code( string $lang_code ): string {
 	// The "Left-to-right marker" comments and the enclosed UTF-8 markers are to
 	// make otherwise strange looking PHP syntax natural (to not be displayed in
 	// right to left). See https://www.drupal.org/node/128866#comment-528929.
+	//
+	// cSpell:disable
 	$lang = [
 		'af'          => [ 'Afrikaans', 'Afrikaans' ],
 		'am'          => [ 'Amharic', 'አማርኛ' ],
@@ -138,6 +142,7 @@ function get_language_name_from_code( string $lang_code ): string {
 		'zh-hans'     => [ 'Chinese, Simplified', '简体中文' ],
 		'zh-hant'     => [ 'Chinese, Traditional', '繁體中文' ],
 	];
+	// cSpell:enable
 
 	return $lang[ $lang_code ][1];
 }

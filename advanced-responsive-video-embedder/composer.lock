@@ -4,21 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "91159bc166283f1570929cfd93e02a88",
+    "content-hash": "e7839289e82f442fa55c21a0337fe51a",
     "packages": [],
     "packages-dev": [
         {
             "name": "automattic/jetpack-autoloader",
-            "version": "v5.0.9",
+            "version": "v5.0.15",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Automattic/jetpack-autoloader.git",
-                "reference": "c9e9b82cc515d9ed093fa0ff21245f277aeceb4e"
+                "reference": "d5263d6ffa91dc0d0d39b1df54de1e9bb2091364"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Automattic/jetpack-autoloader/zipball/c9e9b82cc515d9ed093fa0ff21245f277aeceb4e",
-                "reference": "c9e9b82cc515d9ed093fa0ff21245f277aeceb4e",
+                "url": "https://api.github.com/repos/Automattic/jetpack-autoloader/zipball/d5263d6ffa91dc0d0d39b1df54de1e9bb2091364",
+                "reference": "d5263d6ffa91dc0d0d39b1df54de1e9bb2091364",
                 "shasum": ""
             },
             "require": {
@@ -26,7 +26,7 @@
                 "php": ">=7.2"
             },
             "require-dev": {
-                "automattic/jetpack-changelogger": "^6.0.5",
+                "automattic/jetpack-changelogger": "^6.0.12",
                 "automattic/phpunit-select-config": "^1.0.3",
                 "composer/composer": "^2.2",
                 "yoast/phpunit-polyfills": "^4.0.0"
@@ -68,9 +68,9 @@
                 "wordpress"
             ],
             "support": {
-                "source": "https://github.com/Automattic/jetpack-autoloader/tree/v5.0.9"
+                "source": "https://github.com/Automattic/jetpack-autoloader/tree/v5.0.15"
             },
-            "time": "2025-07-28T19:49:50+00:00"
+            "time": "2025-12-15T11:22:11+00:00"
         },
         {
             "name": "nextgenthemes/wp-settings",
@@ -78,7 +78,7 @@
             "dist": {
                 "type": "path",
                 "url": "../../../../../../dev/composer-packages/wp-settings",
-                "reference": "4e26cd875e2ba18f6f1bb523ef51d01ec7f7869d"
+                "reference": "8d78509913cd57c26e72ba741bd6cab8caa2cea2"
             },
             "require": {
                 "php": ">=7.4"

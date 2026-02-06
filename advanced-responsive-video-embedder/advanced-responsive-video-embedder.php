@@ -3,7 +3,7 @@
  * Plugin Name:       Advanced Responsive Video Embedder for Rumble, Odysee, YouTube, Vimeo, Kick ...
  * Plugin URI:        https://nextgenthemes.com/plugins/arve-pro/
  * Description:       Easy responsive video embeds via URL (like WordPress) or Shortcodes. Supports almost anything you can imagine.
- * Version:           10.6.14
+ * Version:           10.8.2
  * Requires PHP:      7.4
  * Requires at least: 6.6
  * Author:            Nicolas Jonas
@@ -22,7 +22,7 @@ declare(strict_types = 1);
 
 namespace Nextgenthemes\ARVE;
 
-const VERSION                       = '10.6.14';
+const VERSION                       = '10.8.2';
 const PRO_VERSION_REQUIRED          = '7.0.6';
 const PRIVACY_VERSION_REQUIRED      = '1.1.5';
 const RANDOMVIDEO_VERSION_REQUIRED  = '2.1.8';
@@ -50,18 +50,20 @@ const ALLOWED_HTML = array(
 		'title'  => true,
 	),
 	'abbr'   => array( 'title' => true ),
-	'p'      => array(),
+	'small'  => array(),
+	'p'      => array( 'class' => true ),
 	'br'     => array(),
 	'em'     => array(),
 	'strong' => array(),
-	'code'   => array(),
-	'ul'     => array(),
-	'li'     => array(),
-	'pre'    => array(),
+	'code'   => array( 'class' => true ),
+	'ol'     => array( 'class' => true ),
+	'ul'     => array( 'class' => true ),
+	'li'     => array( 'class' => true ),
+	'pre'    => array( 'class' => true ),
 	'div'    => array( 'class' => true ),
 );
 
-if ( defined( 'WP_INSTALLING' ) && WP_INSTALLING ) {
+if ( defined( 'WP_INSTALLING' ) && WP_INSTALLING ) { // @phpstan-ignore-line
 	return;
 }
 
@@ -71,3 +73,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/vendor/autoload_packages.php';
 require_once __DIR__ . '/php/init.php';
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) { // @phpstan-ignore-line
+	\WP_CLI::add_command( 'arve', 'Nextgenthemes\ARVE\CLI' );
+}
+
+register_uninstall_hook( PLUGIN_FILE, __NAMESPACE__ . '\uninstall' );
+function uninstall(): void {
+
+	global $wpdb;
+
+	if ( version_compare( $wpdb->db_version(), '8.0', '>=' ) ) {
+		$wpdb->query( "UPDATE {$wpdb->postmeta} SET meta_value = REGEXP_REPLACE( meta_value, '<template[^>]+arve_cachetime[^>]+></template>', '' )" );
+	}
+}

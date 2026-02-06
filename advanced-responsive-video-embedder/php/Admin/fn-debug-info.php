@@ -6,16 +6,30 @@ namespace Nextgenthemes\ARVE\Admin;
 
 use function Nextgenthemes\ARVE\is_dev_mode;
 
-// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_var_export
+/**
+ * Add ARVE‑related data to the Site Health metadata array.
+ *
+ * @param array   <string, array <string|array<mixed>>> $metadata Existing Site Health metadata.
+ * @return array  <string, array <string|array<mixed>>>           Updated  Site Health metadata.
+ */
 function add_site_health_metadata( array $metadata ): array {
+
+	$option_fields = array();
+	$arve_options  = get_option( 'nextgenthemes_arve' );
+
+	if ( is_array( $arve_options ) ) {
+
+		foreach ( $arve_options as $key => $value ) {
+			$option_fields[ 'option_' . $key ] = [
+				'label'  => $key,
+				'value'  => var_export( $value, true ), // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
+			];
+		}
+	}
 
 	$arve_metadata['arve'] = [
 		'label'  => __( 'ARVE - Advanced Responsive Video Embedder', 'advanced-responsive-video-embedder' ),
 		'fields' => [
-			'options' => [
-				'label' => __( 'ARVE Options', 'advanced-responsive-video-embedder' ),
-				'value' => var_export( get_option( 'nextgenthemes_arve' ), true ),
-			],
 			'arve' => [
 				'label' => __( 'ARVE', 'advanced-responsive-video-embedder' ),
 				'value' => plugin_ver_status( 'advanced-responsive-video-embedder/advanced-responsive-video-embedder.php' ),
@@ -50,14 +64,23 @@ function add_site_health_metadata( array $metadata ): array {
 			],
 			'is_dev_mode' => [
 				'label' => __( 'is_dev_mode', 'advanced-responsive-video-embedder' ),
-				'value' => var_export( is_dev_mode(), true ),
+				'value' => var_export( is_dev_mode(), true ), // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 			],
 			'dismissed_notices' => [
 				'label' => __( 'Dismissed Notices', 'advanced-responsive-video-embedder' ),
-				'value' => var_export( get_user_meta( get_current_user_id(), 'dnh_dismissed_notices' ), true ),
+				'value' => var_export( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
+					get_user_meta(
+						get_current_user_id(),
+						'dnh_dismissed_notices',
+						false
+					),
+					true
+				),
 			],
 		],
 	];
+
+	$arve_metadata['arve']['fields'] = $option_fields + $arve_metadata['arve']['fields'];
 
 	$metadata = array_merge( $arve_metadata, $metadata );
 
@@ -80,72 +103,4 @@ function plugin_ver_status( string $folder_and_filename ): string {
 	}
 
 	return $out;
-}
-
-function list_hooks( string $hook = '' ): array {
-	global $wp_filter;
-
-	if ( isset( $wp_filter[ $hook ]->callbacks ) ) {
-		array_walk(
-			$wp_filter[ $hook ]->callbacks,
-			function ( $callbacks, $priority ) use ( &$hooks ): void {
-				foreach ( $callbacks as $id => $callback ) {
-					$hooks[] = array_merge(
-						[
-							'id'       => $id,
-							'priority' => $priority,
-						],
-						$callback
-					);
-				}
-			}
-		);
-	} else {
-		return [];
-	}
-
-	foreach ( $hooks as &$item ) {
-		// skip if callback does not exist
-		if ( ! is_callable( $item['function'] ) ) {
-			continue;
-		}
-
-		// function name as string or static class method eg. 'Foo::Bar'
-		if ( is_string( $item['function'] ) ) {
-			$ref = strpos( $item['function'], '::' )
-				? new \ReflectionClass( strstr( $item['function'], '::', true ) )
-				: new \ReflectionFunction( $item['function'] );
-
-			$item['file'] = $ref->getFileName();
-			$item['line'] = get_class( $ref ) === 'ReflectionFunction'
-				? $ref->getStartLine()
-				: $ref->getMethod( substr( $item['function'], strpos( $item['function'], '::' ) + 2 ) )->getStartLine();
-
-			// array( object, method ), array( string object, method ), array( string object, string 'parent::method' )
-		} elseif ( is_array( $item['function'] ) ) {
-
-			$ref = new \ReflectionClass( $item['function'][0] );
-
-			// $item['function'][0] is a reference to existing object
-			$item['function'] = array(
-				is_object( $item['function'][0] ) ? get_class( $item['function'][0] ) : $item['function'][0],
-				$item['function'][1],
-			);
-
-			$item['file'] = $ref->getFileName();
-			$item['line'] = strpos( $item['function'][1], '::' )
-				? $ref->getParentClass()->getMethod( substr( $item['function'][1], strpos( $item['function'][1], '::' ) + 2 ) )->getStartLine()
-				: $ref->getMethod( $item['function'][1] )->getStartLine();
-
-			// closures
-		} elseif ( is_callable( $item['function'] ) ) {
-			$ref = new \ReflectionFunction( $item['function'] );
-
-			$item['function'] = get_class( $item['function'] );
-			$item['file']     = $ref->getFileName();
-			$item['line']     = $ref->getStartLine();
-		}
-	}
-
-	return $hooks;
 }

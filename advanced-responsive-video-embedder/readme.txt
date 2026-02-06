@@ -3,9 +3,9 @@ Contributors: nico23
 Donate link: https://nextgenthemes.com/donate/
 Tags: embed, video, lazyload, lightbox, rumble
 Requires at least: 6.6
-Tested up to: 6.8
+Tested up to: 6.9-RC1
 Requires PHP: 7.4
-Stable tag: 10.6.14
+Stable tag: 10.8.2
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,7 +42,7 @@ It is very likely the one and only plugin you will ever need to handle video emb
 *   Magically makes videos responsive you already embedded with WordPress default features.
 *   SEO friendly, lets you specify title, description, upload date to provide search engines with the schema.org data they like to have for better indexing. Pro can autofill this for you.
 *   No 'lock in' if you do not use the ARVE Gutenberg Block or `[arve]` shortcodes.
-*   Supports [almost every video host](https://nextgenthemes.com/plugins/arve-pro/#support-table) that supports iframe embed codes.
+*   Supports [almost every video host](https://nextgenthemes.com/plugins/arve-pro/#provider-support) that supports iframe embed codes.
 *   Embeds via pasting the URL in its own line just like WordPress!
 *   Optionally use very powerful Shortcodes instead.
 *   Clean shortcode syntax `[arve url="https://youtu.be/yUCFRL43Zm4" parameters="start=30" ... /]`, no unnecessary shortcode wrapping.
@@ -59,7 +59,7 @@ It is very likely the one and only plugin you will ever need to handle video emb
 #### Supported Providers ####
 
 [All providers with iframe embed codes](https://nextgenthemes.com/plugins/arve/documentation/#general-iframe-embedding)
-Alugha, Archive.org, Banned.video, Bitchute, Brightcove, Brighteon, Comedy Central, Dailymotion, Dailymotion Playlist, DTube, Facebook, Gab TV, Google Drive, mp4 or webm video files, ARVE general iframe embed, IGN, IMDB, Kickstarter, kla.tv, Livestream.com, Mail.ru, Metacafe, myspace, v.qq.com, Rumble.com, ok.ru, RuTube.ru, TED Talks, TikTok, Twitch, Viddler, Vimeo, VK, Wistia, XTube, xHamster, Yahoo, Youku, YouTube, YouTube Playlist, Kick
+Alugha, Archive.org, Banned.video, Bitchute, Brightcove, Brighteon, Dailymotion, Dailymotion Playlist, DTube, Facebook, Google Drive, mp4 or webm video files, ARVE general iframe embed, IGN, IMDB, Kickstarter, kla.tv, Mail.ru, myspace, v.qq.com, Rumble.com, ok.ru, RuTube.ru, TED Talks, TikTok, Twitch, Viddler, Vimeo, VK, Wistia, XTube, xHamster, Yahoo, Youku, YouTube, YouTube Playlist, Kick
 ### Reviews ###
 
 #### &#9733; &#9733; &#9733; &#9733; &#9733; Great plugin, great support ####
@@ -194,6 +194,32 @@ Please read the [official documentation](https://wordpress.org/support/article/m
 
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
+
+### 2026-01-18 10.8.2 ###
+
+* New: Added `#t=0.1` to HTML5 video sources to fix Safari not showing still frames.
+
+### 2025-11-16 10.8.1 ###
+
+* Fix: Give all React elements keys to prevent console errors.
+* Fix: Show all settings in Block when settings are set to default.
+
+### 2025-11-14 10.8.0 ###
+
+* Fix: YouTube playlists 153 error on Frontend.
+* Fix: YouTube error 153 inside the Block editor.
+* Improved: Block improved, new sorting by categories.
+* Improved: Lots of code improvements.
+* New: Privacy addon feature moved to free plugin: Removes `si` parameter from YouTube URLs when doing oEmbed requests.
+
+### 2025-10-22 10.7.1 ###
+
+* Fix: SEO `uploadDate` not being in ATOM format for Vimeo.
+* Improved: `uploadDate` timezone handling. All formats that php can handle are converted to ATOM format. If timezone is not part of the string, the WordPress timezone setting is used when the time was manually entered. Otherwise UTC is used.
+* Improved: Code improvements. Thanks to phpstan and AI.
+* Improved: Viddler detection.
+* Improved: updated allow_directives.
+* Improved: removed old providers that went down.
 
 ### 2025-07-30 10.6.13 ###
 

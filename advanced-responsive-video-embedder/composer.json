@@ -13,6 +13,14 @@
 	"require": {
 		"php": ">=7.4"
 	},
+	"autoload": {
+		"psr-4": {
+			"Nextgenthemes\\ARVE\\": "php/"
+		}
+	},
+	"extra": {
+		"easy-digital-downloads/edd-sl-sdk": "1.0.0"
+	},
 	"require-dev": {
 		"nextgenthemes/wp-settings": "@dev",
 		"automattic/jetpack-autoloader": "^v5.0.2"
@@ -33,22 +41,23 @@
 			"options": {
 				"symlink": false
 			}
+		},
+		"edd-sl-sdk": {
+			"type": "vcs",
+			"url": "git@github.com:awesomemotive/edd-sl-sdk.git"
 		}
 	},
 	"scripts": {
 		"build": [
-			"./bin/block-json",
-			"./bin/build-readme",
+			"wp @sdev arve block_json > src/block/block-tmp.json",
+			"mv src/block/block-tmp.json src/block/block.json",
+			"./bin/build-readme.php",
 			"npm run build:arve",
+			"rm build/block.json",
 			"npm run build:common",
-			"@composer update",
+			"@composer update --optimize-autoloader",
 			"@composer update --working-dir=tests"
 		],
-		"pre-update-cmd": [
-			"./bin/sync-wp-settings"
-		],
-		"tests": [
-			"cd ${HOME}/websites && NGT_PHPUNIT_LOAD_PLUGINS=\"advanced-responsive-video-embedder\" phpunit --testsuite advanced-responsive-video-embedder"
-		]
+		"pre-update-cmd": "./bin/sync-wp-settings"
 	}
 }

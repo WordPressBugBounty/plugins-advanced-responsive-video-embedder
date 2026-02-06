@@ -7,6 +7,23 @@ namespace Nextgenthemes\WP;
 use ErrorException;
 use InvalidArgumentException;
 
+/**
+ * @phpstan-type NgtSettingValue   string|int|float|bool
+ * @phpstan-type NgtDependsSetting array<int, array<string, NgtSettingValue>>
+ * @phpstan-type NgtSetting array{
+ *   tab?: string,
+ *   option_key?: string,
+ *   default: NgtSettingValue,
+ *   label: string,
+ *   type: string,
+ *   description?: string,
+ *   placeholder?: string,
+ *   shortcode?: bool,
+ *   option?: bool,
+ *   options?: array<string, string>,
+ *   depends?: NgtDependsSetting
+ * }
+ */
 class SettingValidator {
 
 	public string $option_key;
@@ -14,7 +31,7 @@ class SettingValidator {
 	/**
 	 * Default for the setting
 	 *
-	 * @var string|int|bool
+	 * @var NgtSettingValue
 	 */
 	public $default;
 
@@ -33,35 +50,44 @@ class SettingValidator {
 	 */
 	public bool $shortcode;
 
-
 	public string $tab;
+	public string $category;
 	public string $label;
 
 	/**
 	 * The type of the setting
 	 *
-	 * @var string 'string', 'integer' or 'boolean'
+	 * @var 'string' | 'integer' | 'boolean'
 	 */
 	public string $type;
 	public ?string $placeholder;
 	public ?string $description;
 
 	/**
-	 * Options for to choose from, used for 'select'
-	 * Array key holds the string for the option,
-	 * Array value holds translatable option for display.
+	 * Options for <select>, value => label
 	 *
 	 * @var array <string, string>
 	 */
 	public ?array $options;
 	public string $sanitize_callback;
 	public string $ui_element;
-	public string $ui_element_type;
+	public ?string $ui_element_type = null;
 
 	public ?string $edd_store_url;
 	public ?string $edd_item_name;
 	public ?int $edd_item_id;
 
+	/**
+	 * Dependencies for the setting
+	 *
+	 * @var NgtDependsSetting
+	 */
+	public ?array $depends;
+
+	/**
+	 * @param NgtSetting $setting  The setting to validate.
+	 * @param bool       $arve     Indicates specific actions for ARVE plugin only.
+	 */
 	public function __construct( array $setting, bool $arve = false ) {
 
 		if ( $arve ) {
@@ -74,12 +100,14 @@ class SettingValidator {
 		$this->option_key    = $setting['option_key'];
 		$this->label         = $setting['label'];
 		$this->tab           = $setting['tab'] ?? 'main';
+		$this->category      = $setting['category'] ?? '';
 		$this->options       = $setting['options'] ?? null;
 		$this->ui            = $setting['ui'] ?? null;
 		$this->placeholder   = $setting['placeholder'] ?? null;
 		$this->description   = $setting['description'] ?? null;
 		$this->edd_item_id   = $setting['edd_item_id'] ?? null;
 		$this->edd_item_name = $setting['edd_item_name'] ?? null;
+		$this->depends       = $setting['depends'] ?? null;
 
 		if ( isset( $setting['edd_store_url'] ) ) {
 			$this->set_edd_store_url( $setting['edd_store_url'] );
@@ -99,10 +127,9 @@ class SettingValidator {
 			throw new InvalidArgumentException( esc_html( 'Property ' . $this->option_key . ' must be boolean' ) );
 		}
 
-		$this->type            = 'string';
-		$this->ui_element      = 'select';
-		$this->ui_element_type = 'select';
-		$this->options         = array(
+		$this->type       = 'string';
+		$this->ui_element = 'select';
+		$this->options    = array(
 			''      => __( 'Default', 'advanced-responsive-video-embedder' ),
 			'true'  => __( 'True', 'advanced-responsive-video-embedder' ),
 			'false' => __( 'False', 'advanced-responsive-video-embedder' ),
@@ -163,7 +190,7 @@ class SettingValidator {
 		if ( ! is_string( $value ) && ! is_int( $value ) && ! is_bool( $value ) ) {
 			throw new InvalidArgumentException( esc_html( 'Default value must be a string, integer or boolean' ) );
 		}
-		if ( ! isset( $this->type ) ) {
+		if ( empty( $this->type ) ) {
 			throw new InvalidArgumentException( esc_html( 'type must be set before default' ) );
 		}
 		if ( gettype( $value ) !== $this->type ) {
@@ -208,6 +235,9 @@ class SettingValidator {
 		throw new ErrorException( esc_html( 'Input type for ' . $type . ' not implemented' ) );
 	}
 
+	/**
+	 * @return array <string, string|int|bool|null>
+	 */
 	public function to_array(): array {
 		return get_object_vars( $this );
 	}

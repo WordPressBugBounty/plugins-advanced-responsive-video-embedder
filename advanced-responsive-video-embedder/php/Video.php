@@ -4,8 +4,6 @@ declare(strict_types = 1);
 
 namespace Nextgenthemes\ARVE;
 
-use WP_Error;
-use WP_HTML_Tag_Processor;
 use function Nextgenthemes\WP\get_url_arg;
 use function Nextgenthemes\WP\apply_attr;
 use function Nextgenthemes\WP\check_product_keys;
@@ -14,7 +12,33 @@ use function Nextgenthemes\WP\valid_url;
 use function Nextgenthemes\WP\str_contains_any;
 use function Nextgenthemes\WP\str_to_array;
 use function Nextgenthemes\WP\replace_links;
+use function Nextgenthemes\WP\move_keys_to_end;
 
+/**
+ * @phpstan-type OembedData object{
+ *     provider: string,
+ *     author_name: string,
+ *     author_url: string,
+ *     aspect_ratio: string,
+ *     height: int,
+ *     html: string,
+ *     thumbnail_url: string,
+ *     thumbnail_width: float,
+ *     thumbnail_height: float,
+ *     title: string,
+ *     type: string,
+ *     version: string,
+ *     width: int,
+ *     upload_date: string,
+ *     arve_iframe_src: string,
+ *     arve_error_iframe_src: string,
+ *     arve_url: string,
+ *     arve_cachetime: string,
+ *     thumbnail_large_url: string,
+ *     thumbnail_large_width: float,
+ *     thumbnail_large_height: float,
+ * }
+ */
 class Video {
 
 	// bool
@@ -89,24 +113,58 @@ class Video {
 	private string $uid;
 	private string $img_src = '';
 	private string $src     = '';
+
+	/**
+	 * @var string[]
+	 */
 	private array $video_sources;
 	private ?string $video_sources_html = '';
+
+	/**
+	 * @var null|array <int, array{
+	 *     default: bool,
+	 *     kind: string,
+	 *     label: string,
+	 *     src: string,
+	 *     srclang: string
+	 * }>
+	 */
 	private ?array $tracks;
 	private string $src_gen;
 	private string $first_video_file;
+
+	/**
+	 * @var array <string, string|int|float|bool>
+	 */
 	private array $iframe_attr;
+
+	/**
+	 * @var array <string, string|int|float|bool>
+	 */
 	private array $video_attr;
 
-	// args
+	/**
+	 * @var array <string, mixed>
+	 */
 	private array $org_args;
+
+	/**
+	 * @var array <string, mixed>
+	 */
 	private array $shortcode_atts;
 
-	// process data
+	/**
+	 * @var null|OembedData
+	 */
 	private ?object $oembed_data;
+
+	/**
+	 * @var array <string, string|array<string, string>>
+	 */
 	private array $origin_data;
 
 	/**
-	 * @param array <string, any> $args
+	 * @param array <string, mixed> $args
 	 */
 	public function __construct( array $args ) {
 		$this->org_args = $args;
@@ -117,14 +175,14 @@ class Video {
 	 * Prevent setting properties directly
 	 *
 	 * @param string $property The name of the property to set.
-	 * @param mixed $value The value to set for the property.
+	 * @param mixed  $value    The value to set for the property.
 	 */
 	public function __set( string $property, $value ): void {
 		wp_trigger_error( __METHOD__, 'Not allowed to directly set properties, use private set_prop()' );
 	}
 
 	/**
-	 * @return string|WP_REST_Response The built video, error message or REST response.
+	 * @return string|\WP_REST_Response The built video, error message or REST response.
 	 */
 	public function build_video() {
 
@@ -137,7 +195,6 @@ class Video {
 			$this->process_shortcode_atts();
 			$this->oembed_data_errors();
 
-			$html .= get_error_html();
 			$html .= $this->build_html();
 			$html .= $this->get_debug_info( $html );
 
@@ -150,17 +207,10 @@ class Video {
 			}
 		} catch ( \Exception $e ) {
 
-			$trace = '';
+			arve_errors()->add( $e->getCode(), $e->getMessage() );
 
-			// if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			// 	// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
-			//  $trace = '<br>Exception Trace:<br>' . var_export($e->getTrace(), true);
-			// }
-
-			arve_errors()->add( $e->getCode(), $e->getMessage() . $trace );
-
-			$html .= get_error_html();
-			$html .= $this->get_debug_info();
+			$html .= $this->build_error_only_html();
+			$html .= $this->get_debug_info( $html );
 		}
 
 		return apply_filters( 'nextgenthemes/arve/html', $html, get_object_vars( $this ) );
@@ -168,7 +218,32 @@ class Video {
 
 	private function oembed_data_errors(): void {
 
-		// TODO: add error message for missing oembed data
+		if ( ! $this->oembed_data || ! is_dev_mode() ) {
+			return;
+		}
+
+		foreach ( get_object_vars( $this->oembed_data ) as $prop => $value ) {
+
+			if ( ! str_contains( $prop, 'error' ) ) {
+				continue;
+			}
+
+			if ( is_string( $value ) ) {
+				arve_errors()->add( $prop, $value );
+			} elseif ( is_wp_error_array( $value ) ) {
+				arve_errors()->add( $value['code'], $value['message'], $value['data'] ?? [] );
+			}
+		}
+	}
+
+	private function arg_upload_date( string $upload_date ): string {
+
+		// This suggests user entry.
+		if ( ! empty( $this->org_args['upload_date'] ) ) {
+			return normalize_datetime_to_atom( $upload_date, 'WP' );
+		}
+
+		return $upload_date;
 	}
 
 	private function process_shortcode_atts(): void {
@@ -190,6 +265,7 @@ class Video {
 		$this->detect_html5();
 		$this->detect_provider_and_id_from_url();
 
+		$this->set_prop( 'upload_date', $this->arg_upload_date( $this->upload_date ) );
 		$this->set_prop( 'aspect_ratio', $this->arg_aspect_ratio( $this->aspect_ratio ) );
 		$this->set_prop( 'thumbnail', apply_filters( 'nextgenthemes/arve/args/thumbnail', $this->thumbnail, get_object_vars( $this ) ) );
 		$this->set_prop( 'img_src', $this->arg_img_src( $this->img_src ) );
@@ -234,7 +310,7 @@ class Video {
 			return;
 		}
 
-		$p = new WP_HTML_Tag_Processor( $this->shortcode_atts['url'] );
+		$p = new \WP_HTML_Tag_Processor( $this->shortcode_atts['url'] );
 		$p->next_tag( 'iframe' );
 
 		$src = $p->get_attribute( 'src' );
@@ -407,10 +483,11 @@ class Video {
 
 	private function missing_attribute_check(): void {
 
-		// Old shortcodes
-		if ( ! empty( $this->org_args['origin_data']['from'] ) && 'create_shortcodes' === $this->org_args['origin_data']['from'] ) {
+		$from_legacy_shortcode = $this->org_args['origin_data']['Nextgenthemes\ARVE\create_legacy_shortcodes__closure']['create_legacy_shortcodes'] ?? '';
 
-			if ( ! $this->org_args['id'] || ! $this->org_args['provider'] ) {
+		if ( $from_legacy_shortcode ) {
+
+			if ( empty( $this->org_args['id'] ) || empty( $this->org_args['provider'] ) ) {
 				throw new \Exception( 'need id and provider' );
 			}
 
@@ -445,7 +522,7 @@ class Video {
 
 		foreach ( VIDEO_FILE_EXTENSIONS as $ext ) {
 			if ( ! empty( $this->$ext ) && is_numeric( $this->$ext ) ) {
-				$this->set_prop( $ext, wp_get_attachment_url( $this->$ext ) );
+				$this->set_prop( $ext, wp_get_attachment_url( (int) $this->$ext ) );
 			}
 		}
 	}
@@ -474,7 +551,7 @@ class Video {
 
 			if ( ctype_digit( (string) $this->thumbnail ) ) {
 
-				$img_src = wp_get_attachment_image_url( $this->thumbnail, 'small' );
+				$img_src = wp_get_attachment_image_url( (int) $this->thumbnail, 'small' );
 
 				if ( empty( $img_src ) ) {
 					arve_errors()->add(
@@ -504,9 +581,7 @@ class Video {
 	}
 
 	/**
-	 * A description of the entire PHP function.
-	 *
-	 * @param string $ratio colon separated string (width:height)
+	 * @param string $ratio Colon separated string (width:height)
 	 * @return string|null ratio or null to disable
 	 */
 	private function arg_aspect_ratio( string $ratio ): ?string {
@@ -575,7 +650,7 @@ class Video {
 				);
 
 				$this->video_sources[]     = $source;
-				$this->video_sources_html .= sprintf( '<source type="%s" src="%s">', $source['type'], $source['src'], $this->$ext );
+				$this->video_sources_html .= sprintf( '<source type="%s" src="%s#t=0.1">', $source['type'], $source['src'] );
 
 				if ( empty( $this->first_video_file ) ) {
 					$this->first_video_file = $this->$ext;
@@ -595,7 +670,15 @@ class Video {
 	}
 
 	/**
-	 * @return array <int, Array>
+	 * Detects media tracks and returns their attributes.
+	 *
+	 * @return array <int, array{
+	 *     default: bool,
+	 *     kind: string,
+	 *     label: string,
+	 *     src: string,
+	 *     srclang: string
+	 * }>
 	 */
 	private function detect_tracks(): array {
 
@@ -699,7 +782,7 @@ class Video {
 
 		$url_args      = array_merge( VIDEO_FILE_EXTENSIONS, array( 'url' ) );
 		$type          = get_arg_type( $prop_name );
-		$property_type = ( new \ReflectionProperty( __CLASS__, $prop_name ) )->getType()->getName();
+		$property_type = ( new \ReflectionProperty( __CLASS__, $prop_name ) )->getType()->getName(); // @phpstan-ignore-line
 
 		if ( $type && $type !== $property_type ) {
 			throw new \Exception( esc_html( $prop_name ) . ' property has the wrong type' );
@@ -738,6 +821,55 @@ class Video {
 		}
 
 		return '';
+	}
+
+	private function build_error_only_html(): string {
+		$block_attr = empty( $this->origin_data['gutenberg'] ) ? '' : ' ' . get_block_wrapper_attributes();
+		$html       = sprintf(
+			'<div class="arve"%s>%s</div>',
+			$block_attr,
+			$this->get_error_html()
+		);
+
+		return $html;
+	}
+
+	/**
+	 * Iterates over each error code, handling multiple messages and data per code.
+	 * Generates HTML for errors, with optional debug data in dev mode.
+	 * Fucking pain in the ass, thanks AI.
+	 */
+	private function get_error_html(): string {
+
+		$html = '';
+
+		foreach ( arve_errors()->get_error_codes() as $code ) {
+			$messages = arve_errors()->get_error_messages( $code );
+			if ( empty( $messages ) ) {
+				continue;
+			}
+
+			$all_data  = arve_errors()->get_all_error_data( $code );
+			$code_html = '';
+
+			foreach ( $messages as $index => $message ) {
+				$code_html .=
+					'<p><small><abbr title="Advanced Responsive Video Embedder">ARVE</abbr> ' .
+					__( 'error: ', 'advanced-responsive-video-embedder' ) .
+					$message .
+					'</small></p>';
+
+				if ( isset( $all_data[ $index ] ) && is_dev_mode() ) {
+					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
+					$code_html .= debug_pre( var_export( $all_data[ $index ], true ) );
+				}
+			}
+
+			$html .= error_wrap( $code_html, (string) $code );
+			arve_errors()->remove( $code );
+		}
+
+		return $html;
 	}
 
 	private function build_html(): string {
@@ -779,11 +911,12 @@ class Video {
 	{$this->card_consent_html()}
 	{$this->promote_link()}
 	{$this->build_seo_data()}
+	{$this->get_error_html()}
 </div>
 HTML;
 		}
 
-		$p = new WP_HTML_Tag_Processor( $html );
+		$p = new \WP_HTML_Tag_Processor( $html );
 
 		if ( ! $p->next_tag( [ 'class_name' => 'arve' ] ) ) {
 			wp_trigger_error( __FUNCTION__, 'failed to find .arve tag' );
@@ -799,10 +932,10 @@ HTML;
 		apply_attr(
 			$p,
 			array(
-				'data-mode'     => $this->mode,
-				'data-oembed'   => $this->oembed_data ? '1' : false,
-				'data-provider' => $this->provider,
 				'id'            => $this->uid,
+				'data-mode'     => $this->mode,
+				'data-provider' => $this->provider,
+				'data-oembed'   => $this->oembed_data ? '1' : false,
 				'style'         => $this->maxwidth ? sprintf( 'max-width:%dpx;', $this->maxwidth ) : false,
 			)
 		);
@@ -865,21 +998,16 @@ HTML;
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy#directives
 		$allow_directives = [
 			'accelerometer'                   => 'none',
-			#'ambient-light-sensor'            => 'none',
 			'autoplay'                        => $this->autoplay ? 'self' : 'none',
-			#'battery'                         => 'none',
-			#'bluetooth'                       => 'none',
-			#'browsing-topics'                 => 'none',
+			'bluetooth'                       => 'none',
+			'browsing-topics'                 => 'none',
 			'camera'                          => ( 'zoom' === $this->provider ) ? 'self' : 'none',
-			'ch-ua'                           => 'none',
 			'clipboard-read'                  => 'none',
 			'clipboard-write'                 => 'self',
 			'display-capture'                 => 'none',
-			#'document-domain'                 => 'none',
-			#'domain-agent'                    => 'none',
+			#'deferred-fetch'                  => 'none', # ???
+			#'deferred-fetch-minimal'          => 'none', # ???
 			'encrypted-media'                 => $this->encrypted_media ? 'self' : 'none',
-			#'execution-while-not-rendered'    => 'none',
-			#'execution-while-out-of-viewport' => 'none',
 			'gamepad'                         => 'none',
 			'geolocation'                     => 'none',
 			'gyroscope'                       => 'none',
@@ -887,22 +1015,21 @@ HTML;
 			'identity-credentials-get'        => 'none',
 			'idle-detection'                  => 'none',
 			'keyboard-map'                    => 'none',
-			'local-fonts'                     => 'none',
+			'local-fonts'                     => 'self',
 			'magnetometer'                    => 'none',
 			'microphone'                      => ( 'zoom' === $this->provider ) ? 'self' : 'none',
 			'midi'                            => 'none',
-			#'navigation-override'             => 'none',
-			#'otp-credentials'                 => 'none',
+			'otp-credentials'                 => 'none',
 			'payment'                         => 'none',
 			'picture-in-picture'              => 'self',
 			'publickey-credentials-create'    => 'none',
 			'publickey-credentials-get'       => 'none',
 			'screen-wake-lock'                => 'none',
 			'serial'                          => 'none',
-			#'speaker-selection'               => 'self',
+			'summarizer'                      => 'none',
 			'sync-xhr'                        => 'self', // viddler fails without this
 			'usb'                             => 'none',
-			#'web-share'                       => 'self',
+			'web-share'                       => 'self',
 			'window-management'               => 'none',
 			'xr-spatial-tracking'             => 'none',
 		];
@@ -919,23 +1046,23 @@ HTML;
 		}
 
 		$this->iframe_attr = array(
+			'src'                => $this->src,
 			'credentialless'     => $this->credentialless,
 			'referrerpolicy'     => $this->referrerpolicy(),
+			'sandbox'            => $this->encrypted_media ? null : $sandbox,
 			'allow'              => $allow,
-			'allowfullscreen'    => '',
 			'class'              => $class,
-			'data-lenis-prevent' => '',
 			'data-arve'          => $this->uid,
 			'data-src-no-ap'     => iframesrc_urlarg_autoplay( $this->src, $this->provider, false ),
 			'frameborder'        => '0',
 			'height'             => $this->height,
-			'name'               => $this->iframe_name,
-			'sandbox'            => $this->encrypted_media ? null : $sandbox,
-			'scrolling'          => 'no',
-			'src'                => $this->src,
 			'width'              => $this->width,
 			'title'              => $this->title,
+			'name'               => $this->iframe_name,
 			'loading'            => ( 'normal' === $this->mode ) ? 'lazy' : 'eager',
+			'allowfullscreen'    => '',
+			'scrolling'          => 'no',
+			'data-lenis-prevent' => '',
 		);
 
 		if ( function_exists( __NAMESPACE__ . '\Pro\iframe_attr' ) ) {
@@ -977,7 +1104,7 @@ HTML;
 		return 'iframe';
 	}
 
-	private function referrerpolicy(): ?string {
+	private function referrerpolicy(): string {
 
 		$providers_allowed = str_to_array( options()['allow_referrer'] );
 
@@ -1038,7 +1165,25 @@ HTML;
 		);
 	}
 
-	private function get_debug_info( string $input_html = '' ): string {
+	/**
+	 * Get a debug parameter value from the request.
+	 *
+	 * @phpcs:disable WordPress.Security.NonceVerification.Recommended
+	 * @phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_var_export
+	 * @phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_print_r
+	 * @param  string  $param  Parameter name without the 'arve-debug-' prefix.
+	 *
+	 * @return string|null  The sanitized parameter value or null if not set.
+	 */
+	private static function get_debug_param( string $param ): ?string {
+		if ( ! isset( $_GET[ "arve-debug-{$param}" ] ) ) {
+			return null;
+		}
+
+		return sanitize_text_field( wp_unslash( $_GET[ "arve-debug-{$param}" ] ) );
+	}
+
+	private function get_debug_info( string $input_html ): string {
 
 		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 			return '';
@@ -1046,9 +1191,6 @@ HTML;
 
 		$html = '';
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_var_export
-		// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_print_r
 		if ( isset( $_GET['arve-debug-options'] ) ) {
 			static $show_options_debug = true;
 
@@ -1059,44 +1201,99 @@ HTML;
 			$show_options_debug = false;
 		}
 
-		$pre_style =
-			'background-color: #111;' .
-			'color: #eee;' .
-			'font-size: 15px;' .
-			'white-space: pre-wrap;' .
-			'word-wrap: break-word;';
+		$arve_debug_attr = self::get_debug_param( 'attr' );
+		$arve_debug_prop = self::get_debug_param( 'prop' );
 
-		if ( ! empty( $_GET['arve-debug-attr'] ) ) {
-			$debug_attr = sanitize_text_field( wp_unslash( $_GET['arve-debug-attr'] ) );
-			$input_attr = isset( $this->org_args[ $debug_attr ] ) ? print_r( $this->org_args[ $debug_attr ], true ) : 'not set';
-			$html      .= sprintf(
-				'<pre style="%1$s">in %2$s: %3$s%2$s: %4$s</pre>',
-				esc_attr( $pre_style ),
-				esc_html( $debug_attr ),
-				esc_html( $input_attr ) . PHP_EOL,
-				esc_html( print_r( $this->$debug_attr, true ) )
-			);
+		if ( $arve_debug_attr ) {
+			$input_attr = isset( $this->org_args[ $arve_debug_attr ] ) ? print_r( $this->org_args[ $arve_debug_attr ], true ) : 'not set';
+			$prop       = isset( $this->$arve_debug_attr ) ? print_r( $this->$arve_debug_attr, true ) : 'not set';
+			$html      .= esc_html( $arve_debug_attr ) . PHP_EOL;
+			$html      .= esc_html( $input_attr ) . PHP_EOL;
+			$html      .= esc_html( $prop );
+			$html       = debug_pre( $html, true );
+		}
+
+		if ( $arve_debug_prop ) {
+			$html .= debug_pre( var_export( $this->$arve_debug_prop, true ), true );
+		}
+
+		if ( isset( $_GET['arve-debug-oembed'] ) ) {
+			$html .= debug_pre( var_export( $this->oembed_data, true ), true );
 		}
 
 		if ( isset( $_GET['arve-debug-atts'] ) ) {
-			$html .= sprintf(
-				'<pre style="%s">in: %s</pre>',
-				esc_attr( $pre_style ),
-				esc_html( var_export( array_filter( $this->org_args ), true ) )
-			);
-			$html .= sprintf(
-				'<pre style="%s">$a: %s</pre>',
-				esc_attr( $pre_style ),
-				esc_html( var_export( array_filter( get_object_vars( $this ) ), true ) )
-			);
+			$html .= debug_pre( $this->debug_compare_args_to_props(), true );
 		}
 
 		if ( isset( $_GET['arve-debug-html'] ) ) {
-			$html .= sprintf( '<pre style="%s">%s</pre>', esc_attr( $pre_style ), esc_html( $input_html ) );
+			$html .= debug_pre( $input_html, true );
 		}
 		// phpcs:enable
 
 		return $html;
+	}
+
+	/**
+	 * Debug function to compare org_args with object properties
+	 *
+	 * @return string Debug output
+	 */
+	private function debug_compare_args_to_props(): string {
+
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return '';
+		}
+
+		// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_var_export
+
+		$output       = '';
+		$obj_vars     = array_filter( get_object_vars( $this ) );
+		$org_args     = array_filter( $this->org_args );
+		$checked_keys = array();
+		$org_args     = move_keys_to_end( $org_args, array( 'oembed_data', 'origin_data' ) );
+
+		if ( ! empty( $obj_vars['oembed_data']->description ) ) {
+			$obj_vars['oembed_data']->description = str_replace( PHP_EOL, '', $obj_vars['oembed_data']->description );
+		}
+
+		unset( $obj_vars['org_args'] );
+		unset( $obj_vars['shortcode_atts'] );
+
+		// Compare values from org_args with object properties
+		foreach ( $org_args as $key => $org_value ) {
+
+			$checked_keys[] = $key;
+
+			if ( ! isset( $obj_vars[ $key ] ) ) {
+				continue;
+			}
+
+			$prop_value = $obj_vars[ $key ];
+
+			if ( $org_value === $prop_value ) {
+				$output .= sprintf( "%s: %s\n", $key, var_export( $org_value, true ) );
+			} else {
+				$output .= sprintf(
+					"%s:\n  org_args: %s\n  property: %s\n",
+					$key,
+					var_export( $org_value, true ),
+					var_export( $prop_value, true )
+				);
+			}
+		}
+
+		// Find properties missing from org_args
+		foreach ( $obj_vars as $key => $value ) {
+
+			if ( in_array( $key, $checked_keys, true ) ) {
+				continue;
+			}
+
+			$output .= sprintf( "Prop only: %s: %s\n", $key, var_export( $value, true ) );
+		}
+
+		// phpcs:enable
+		return $output;
 	}
 
 	private function arve_embed_inner_html(): string {
@@ -1164,7 +1361,9 @@ HTML;
 			}
 		}
 
-		return '<script type="application/ld+json">' . wp_json_encode( $seo ) . '</script>';
+		return '<script type="application/ld+json">' .
+			wp_json_encode( $seo ) .
+			'</script>';
 	}
 
 	private function promote_link(): string {

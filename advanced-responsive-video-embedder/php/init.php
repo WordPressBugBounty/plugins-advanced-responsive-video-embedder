@@ -4,17 +4,17 @@ declare(strict_types = 1);
 
 namespace Nextgenthemes\ARVE;
 
+use Nextgenthemes\WP\Settings;
+
 // Stop outdated addons from executing
 remove_action( 'plugins_loaded', 'Nextgenthemes\ARVE\Pro\init', 15 );
 remove_action( 'plugins_loaded', 'Nextgenthemes\ARVE\RandomVideo\init', 15 );
 remove_action( 'plugins_loaded', 'Nextgenthemes\ARVE\Privacy\init', 16 );
 
-add_action( 'init', __NAMESPACE__ . '\init', 9 );
-add_action( 'admin_init', __NAMESPACE__ . '\init_admin', 9 );
+add_action( 'init', __NAMESPACE__ . '\init', 8 );
+add_action( 'admin_init', __NAMESPACE__ . '\init_admin', 8 );
 
 function init(): void {
-
-	require_once PLUGIN_DIR . '/php/Video.php';
 	require_once PLUGIN_DIR . '/php/fn-cache.php';
 	require_once PLUGIN_DIR . '/php/fn-assets.php';
 	require_once PLUGIN_DIR . '/php/fn-html-output.php';
@@ -31,16 +31,17 @@ function init(): void {
 	maybe_delete_oembed_cache(); // Must be before update_option arve_version
 	update_option( 'arve_version', VERSION );
 
-	add_action( 'init', __NAMESPACE__ . '\settings_instance' );
-	add_action( 'init', __NAMESPACE__ . '\init_nextgenthemes_settings' );
-	add_action( 'init', __NAMESPACE__ . '\register_assets' );
-	add_action( 'init', __NAMESPACE__ . '\create_shortcodes' );
-	add_action( 'init', __NAMESPACE__ . '\create_url_handlers' );
+	add_action( 'init', __NAMESPACE__ . '\create_settings_instance', 9 );
+	add_action( 'init', __NAMESPACE__ . '\init_nextgenthemes_settings', 9 );
+	add_action( 'init', __NAMESPACE__ . '\register_assets', 11 );
+	add_action( 'init', __NAMESPACE__ . '\create_shortcodes', 11 );
+	add_action( 'init', __NAMESPACE__ . '\create_url_handlers', 11 );
 	add_filter( 'mce_css', __NAMESPACE__ . '\add_styles_to_mce' );
 	add_filter( 'oembed_remote_get_args', __NAMESPACE__ . '\vimeo_referer', 10, 2 );
+	add_filter( 'oembed_fetch_url', __NAMESPACE__ . '\remove_youtube_si_param', 10, 2 );
 	add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\action_wp_enqueue_scripts' );
 	add_filter( 'render_block_core/embed', __NAMESPACE__ . '\remove_embed_block_aspect_ratio' );
-	add_action( 'wp_video_shortcode_override', __NAMESPACE__ . '\wp_video_shortcode_override', 10, 4 );
+	add_filter( 'wp_video_shortcode_override', __NAMESPACE__ . '\wp_video_shortcode_override', 10, 2 );
 	add_filter( 'language_attributes', __NAMESPACE__ . '\html_id' );
 	add_filter( 'oembed_dataparse', __NAMESPACE__ . '\filter_oembed_dataparse', PHP_INT_MAX, 3 );
 	add_filter( 'embed_oembed_html', __NAMESPACE__ . '\filter_embed_oembed_html', OEMBED_HTML_PRIORITY, 4 );
@@ -50,6 +51,14 @@ function init(): void {
 		maybe_init_addon( $addon_name );
 	}
 }
+
+// add_action(
+//  'init',
+//  function (): void {
+//      d( get_option( 'nextgenthemes_arve' ) );
+//  },
+//  11
+// );
 
 function maybe_init_addon( string $name ): void {
 
@@ -88,13 +97,26 @@ function init_admin(): void {
 	add_filter( 'debug_information', __NAMESPACE__ . '\Admin\add_site_health_metadata' );
 }
 
-register_uninstall_hook( PLUGIN_FILE, __NAMESPACE__ . '\uninstall' );
+function port_licenses(): void {
 
-function uninstall(): void {
+	$plugins  = [ 'arve_pro', 'arve_amp', 'arve_random_video', 'arve_sticky_videos' ];
+	$settings = get_option( 'nextgenthemes', [] );
 
-	global $wpdb;
+	if ( empty( $settings ) ) {
+		return;
+	}
 
-	if ( version_compare( $wpdb->db_version(), '8.0', '>=' ) ) {
-		$wpdb->query( "UPDATE {$wpdb->postmeta} SET meta_value = REGEXP_REPLACE( meta_value, '<template[^>]+arve_cachetime[^>]+></template>', '' )" );
+	foreach ( $plugins as $plugin ) {
+
+		$key    = $settings[ $plugin ] ?? null;
+		$status = $settings[ $plugin . '_status' ] ?? null;
+		$plugin = str_replace( '_', '-', $plugin );
+
+		#df( $plugin, $key, $status );
+
+		if ( ! empty( $key ) && ! empty( $status ) ) {
+			add_option( $plugin . '_license_key', $key );
+			# TODO status
+		}
 	}
 }

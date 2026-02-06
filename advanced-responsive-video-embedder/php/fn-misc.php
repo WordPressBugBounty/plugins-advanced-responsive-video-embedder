@@ -17,10 +17,35 @@ function arve_errors(): WP_Error {
 	return $instance;
 }
 
+/** @param mixed $data */
+function is_wp_error_array( $data ): bool {
+	return is_array( $data ) &&
+		isset( $data['code'] ) &&
+		isset( $data['message'] );
+}
+
+/**
+ * @return array <string, array{
+ *     name:           string,
+ *     regex:          string,
+ *     oembed:         bool,
+ *     embed_url:      string,
+ *     default_params: string,
+ *     auto_thumbnail: bool,
+ *     rebuild_url?:   string,
+ *     tests:          array<int, array{
+ *         url: string,
+ *         id:  string
+ *     }>
+ * }>
+ */
 function get_host_properties(): array {
 	return require __DIR__ . '/providers.php';
 }
 
+/**
+ * @param array <string, mixed> $a
+ */
 function is_card( array $a ): bool {
 
 	$is_ll_mode = in_array( $a['mode'], [ 'lazyload', 'lightbox' ], true );
@@ -33,7 +58,7 @@ function is_card( array $a ): bool {
  * When the aspect ratio in invalid contains floating point value, the original aspect ratio will be returned.
  *
  * @param string $aspect_ratio The input aspect ratio in the format 'width:height'
- * @return string The simplified aspect ratio in the format 'newWidth:newHeight'
+ * @return string              The simplified aspect ratio in the format 'newWidth:newHeight'
  */
 function aspect_ratio_gcd( string $aspect_ratio ): string {
 
@@ -58,9 +83,9 @@ function gcd( int $a, int $b ): int {
 /**
  * Calculates seconds based on youtube times if needed
  *
- * @param string $time   The 't=1h25m13s' or t=123 part of youtube URLs.
+ * @param string $time The 't=1h25m13s' or t=123 part of youtube URLs.
  *
- * @return int Starttime in seconds.
+ * @return int         Starttime in seconds.
  */
 function youtube_time_to_seconds( string $time ): int {
 
@@ -89,10 +114,7 @@ function youtube_time_to_seconds( string $time ): int {
 /**
  * Calculate the new height based on the old width, old height, and new width.
  *
- * @param float $old_width The old width
- * @param float $old_height The old height
- * @param int $new_width The new width
- * @return float The new height
+ * @return float            The new height
  */
 function new_height( float $old_width, float $old_height, int $new_width ): float {
 	$aspect_num = $old_width / $old_height;
@@ -104,21 +126,90 @@ function new_height( float $old_width, float $old_height, int $new_width ): floa
 /**
  * Calculates padding percentage value for a particular aspect ratio
  *
- * @param string $aspect_ratio example '4:3'
+ * @param string $aspect_ratio Example '4:3'
  *
  * @since 4.2.0
  *
  */
 function aspect_ratio_to_percentage( string $aspect_ratio ): float {
 
-	list( $width, $height ) = explode( ':', $aspect_ratio );
-	$percentage             = ( $height / $width ) * 100;
+	list(  $width, $height ) = explode( ':', $aspect_ratio );
+	$percentage              = ( (int) $height / (int) $width ) * 100;
 
 	return $percentage;
 }
 
 function disabled_on_feeds(): bool {
 	return is_feed() && ! options()['feed'] ? true : false;
+}
+
+function is_valid_date_time( string $datetime_str ): bool {
+	try {
+		new \DateTime( $datetime_str );
+		return true;
+	} catch ( \Exception $e ) {
+
+		arve_errors()->add(
+			__FUNCTION__,
+			sprintf(
+				// Translators: %s is the invalid datetime string.
+				__( 'Invalid datetime: <code>%s</code>', 'advanced-responsive-video-embedder' ),
+				$datetime_str
+			),
+			[
+				'code'    => $e->getCode(),
+				'message' => $e->getMessage(),
+			]
+		);
+
+		return false;
+	}
+}
+
+/**
+ * Checks if a datetime string contains timezone information.
+ *
+ * @param string $datetime_str The datetime string to check.
+ * @return bool                True if timezone is present, false otherwise.
+ */
+function has_timezone( string $datetime_str ): bool {
+	// Match common timezone formats:
+	// Z - Zulu time (UTC)
+	// +00:00 or -05:00 - Offset format
+	// +0000 or -0500 - Compact offset format
+	// GMT, UTC, EST, etc. - Named timezones (3-5 letters)
+	// America/New_York - IANA timezone identifiers
+	return preg_match( '/(?:Z|[+-]\d{2}:?\d{2}|(?:GMT|UTC)|[A-Z]{3,5}|[A-Za-z]+\/[A-Za-z_]+)$/i', $datetime_str ) === 1;
+}
+
+/**
+ * Normalizes a datetime string to ATOM format.
+ *
+ * @param string  $datetime_str      The datetime string to normalize.
+ * @param string  $fallback_timezone The fallback timezone 'UTC' or 'WP' for WordPress timezone.
+ * @return string                    The normalized datetime string in ATOM format.
+ */
+function normalize_datetime_to_atom( string $datetime_str, string $fallback_timezone ): string {
+
+	if ( ! is_valid_date_time( $datetime_str ) ) {
+		return $datetime_str;
+	}
+
+	switch ( strtolower( $fallback_timezone ) ) {
+		case 'wp':
+			$fallback_timezone = wp_timezone();
+			break;
+		case 'utc':
+			$fallback_timezone = new \DateTimeZone( 'UTC' );
+			break;
+		default:
+			throw new \InvalidArgumentException( 'Invalid fallback timezone' );
+	}
+
+	$timezone = has_timezone( $datetime_str ) ? null : $fallback_timezone;
+	$dt       = new \DateTime( $datetime_str, $timezone );
+
+	return $dt->format( \DateTime::ATOM );
 }
 
 /**
@@ -192,9 +283,6 @@ function is_amp(): bool {
 /**
  * Register oEmbed Widget.
  *
- * Include widget file and register widget class.
- *
- * @since 1.0.0
  * @param \Elementor\Widgets_Manager $widgets_manager Elementor widgets manager.
  */
 function register_elementor_widget( \Elementor\Widgets_Manager $widgets_manager ): void {
