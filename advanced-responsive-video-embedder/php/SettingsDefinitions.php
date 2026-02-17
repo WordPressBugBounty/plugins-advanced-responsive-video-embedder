@@ -14,7 +14,7 @@ class SettingsDefinitions {
 	 */
 	public static function main_settings(): array {
 
-		$properties = get_host_properties();
+		$properties = PROVIDERS;
 
 		foreach ( $properties as $provider => $values ) {
 
@@ -334,8 +334,9 @@ class SettingsDefinitions {
 	 */
 	public static function url_params_settings(): array {
 
+		/** @var array<string,NgtSetting> $settings */
 		$settings   = array();
-		$properties = get_host_properties();
+		$properties = PROVIDERS;
 
 		foreach ( $properties as $provider => $v ) {
 
