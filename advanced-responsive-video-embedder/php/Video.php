@@ -203,6 +203,7 @@ class Video {
 				foreach ( VIEW_SCRIPT_HANDLES as $handle ) {
 					wp_enqueue_style( $handle );
 					wp_enqueue_script( $handle );
+					wp_enqueue_script_module( $handle );
 				}
 			}
 		} catch ( \Exception $e ) {
@@ -335,10 +336,10 @@ class Video {
 		}
 
 		$src_gen = $this->build_iframe_src();
-		$src_gen = special_iframe_src_mods( $src_gen, $this->provider, $this->url );
+		$src_gen = $this->special_iframe_src_mods( $src_gen );
 
 		if ( ! empty( $src ) ) {
-			$src = special_iframe_src_mods( $src, $this->provider, $this->url, true );
+			$src = $this->special_iframe_src_mods( $src, true );
 			compare_oembed_src_with_generated_src( $src, $src_gen, $this->provider, $this->url );
 		} else {
 			$src = '';
@@ -364,6 +365,49 @@ class Video {
 		}
 
 		$src = apply_filters( 'nextgenthemes/arve/args/iframe_src', $src, get_object_vars( $this ) );
+
+		return $src;
+	}
+
+	private function special_iframe_src_mods( string $src, bool $oembed_src = false ): string {
+
+		if ( empty( $src ) ) {
+			return $src;
+		}
+
+		switch ( $this->provider ) {
+			case 'youtube':
+				$yt_v    = get_url_arg( $this->url, 'v' );
+				$yt_list = get_url_arg( $this->url, 'list' );
+
+				if ( $oembed_src &&
+					str_contains( $src, '/embed/videoseries?' ) &&
+					$yt_v
+				) {
+					$src = str_replace( '/embed/videoseries?', "/embed/$yt_v?", $src );
+				}
+
+				if ( $yt_list ) {
+					$src = remove_query_arg( 'feature', $src );
+					$src = add_query_arg( 'list', $yt_list, $src );
+				}
+
+				$options = options();
+
+				if ( $options['youtube_nocookie'] ) {
+					$src = str_replace( 'https://www.youtube.com', 'https://www.youtube-nocookie.com', $src );
+				}
+
+				break;
+			case 'vimeo':
+				$src      = $this->vimeo_secret( $src );
+				$fragment = (string) wp_parse_url( $this->url, PHP_URL_FRAGMENT );
+
+				if ( str_starts_with( $fragment, 't' ) ) {
+					$src .= '#' . $fragment;
+				}
+				break;
+		}
 
 		return $src;
 	}
@@ -472,13 +516,21 @@ class Video {
 					$src = str_replace( 'ted.com/talks/', "ted.com/talks/lang/{$lang}/", $src );
 				}
 				break;
-		}
-
-		if ( ! empty( $this->vimeo_secret ) ) {
-			$src = add_query_arg( 'h', $this->vimeo_secret, $src );
+			case 'vimeo':
+				$src = $this->vimeo_secret( $src );
+				break;
 		}
 
 		return $src;
+	}
+
+	private function vimeo_secret( string $src ): string {
+
+		if ( empty( $this->vimeo_secret ) ) {
+			return $src;
+		}
+
+		return add_query_arg( 'h', $this->vimeo_secret, $src );
 	}
 
 	private function missing_attribute_check(): void {
@@ -650,7 +702,7 @@ class Video {
 				);
 
 				$this->video_sources[]     = $source;
-				$this->video_sources_html .= sprintf( '<source type="%s" src="%s#t=0.1">', $source['type'], $source['src'] );
+				$this->video_sources_html .= sprintf( '<source type="%s" src="%s">', $source['type'], $source['src'] );
 
 				if ( empty( $this->first_video_file ) ) {
 					$this->first_video_file = $this->$ext;
@@ -672,7 +724,7 @@ class Video {
 	/**
 	 * Detects media tracks and returns their attributes.
 	 *
-	 * @return array <int, array{
+	 * @return array<int,array{
 	 *     default: bool,
 	 *     kind: string,
 	 *     label: string,
@@ -1322,48 +1374,84 @@ HTML;
 	}
 
 	private function build_seo_data(): string {
-
-		$options = options();
-
-		if ( ! $options['seo_data'] ) {
+		if ( ! $this->should_build_seo_data() ) {
 			return '';
 		}
 
-		$seo = array(
+		$seo_data = $this->build_base_seo_structure();
+		$seo_data = $this->add_author_to_seo( $seo_data );
+		$seo_data = $this->add_metadata_to_seo( $seo_data );
+
+		return '<script type="application/ld+json">' . wp_json_encode( $seo_data ) . '</script>';
+	}
+
+	private function should_build_seo_data(): bool {
+		$options = options();
+		return ! empty( $options['seo_data'] );
+	}
+
+	/**
+	 * @return array<string,string|array<string,string>>
+	 */
+	private function build_base_seo_structure(): array {
+		return [
 			'@context' => 'http://schema.org/',
 			'@id'      => get_permalink() . '#' . $this->uid,
-			'type'     => 'VideoObject',
-		);
+			'@type'    => 'VideoObject',
+		];
+	}
 
-		$metas = array(
+	/**
+	 * @param  array<string,string|array<string,string>> $seo_data
+	 * @return array<string,string|array<string,string>>
+	 */
+	private function add_author_to_seo( array $seo_data ): array {
+		if ( ! empty( $this->author_name ) ) {
+			$seo_data['author'] = [
+				'@type' => 'Organization',
+				'name'  => $this->author_name,
+			];
+		}
+
+		return $seo_data;
+	}
+
+	/**
+	 * @param  array<string,string|array<string,string>> $seo_data
+	 * @return array<string,string|array<string,string>>
+	 */
+	private function add_metadata_to_seo( array $seo_data ): array {
+		$property_mappings = [
 			'first_video_file' => 'contentURL',
 			'src'              => 'embedURL',
 			'title'            => 'name',
 			'img_src'          => 'thumbnailUrl',
 			'upload_date'      => 'uploadDate',
-			'author_name'      => 'author',
 			'duration'         => 'duration',
 			'description'      => 'description',
-		);
+		];
 
-		foreach ( $metas as $prop => $json_name ) {
-
-			if ( empty( $this->{$prop} ) ) {
+		foreach ( $property_mappings as $property => $json_key ) {
+			if ( empty( $this->{$property} ) ) {
 				continue;
 			}
 
-			if ( 'duration' === $prop && is_numeric( $this->$prop ) ) {
-				$seo[ $json_name ] = seconds_to_iso8601_duration( $this->$prop );
-			} elseif ( 'description' === $prop ) {
-				$seo[ $json_name ] = trim( replace_links( $this->$prop, '' ) );
-			} else {
-				$seo[ $json_name ] = trim( $this->$prop );
-			}
+			$seo_data[ $json_key ] = $this->format_seo_property( $property, $this->{$property} );
 		}
 
-		return '<script type="application/ld+json">' .
-			wp_json_encode( $seo ) .
-			'</script>';
+		return $seo_data;
+	}
+
+	private function format_seo_property( string $property, string $value ): string {
+		if ( 'duration' === $property && is_numeric( $value ) ) {
+			return seconds_to_iso8601_duration( $value );
+		}
+
+		if ( 'description' === $property ) {
+			return trim( replace_links( $value, '' ) );
+		}
+
+		return trim( $value );
 	}
 
 	private function promote_link(): string {
