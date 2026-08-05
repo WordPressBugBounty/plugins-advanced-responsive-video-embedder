@@ -9,7 +9,7 @@ use function Nextgenthemes\WP\get_products;
 use function Nextgenthemes\WP\str_contains_any;
 use const Nextgenthemes\ARVE\VERSION;
 
-/** @param array <string, int|float|string|bool> $options */
+/** @param array<string,int|float|string|bool> $options */
 function init_edd_updaters( array $options ): void {
 
 	$products = get_products();
@@ -23,8 +23,8 @@ function init_edd_updaters( array $options ): void {
 }
 
 /**
- * @param array <string, int|float|string|bool> $product
- * @param array <string, int|float|string|bool> $options
+ * @param array<string,int|float|string|bool> $product
+ * @param array<string,int|float|string|bool> $options
  */
 function init_plugin_updater( array $product, array $options ): void {
 

@@ -2,7 +2,7 @@
 	"name": "nextgenthemes/advanced-responsive-video-embedder",
 	"description": "ARVE Advanced Responsive Video Embedder",
 	"type": "wordpress-plugin",
-	"license": "GPL-3.0",
+	"license": "GPL-3.0-only",
 	"authors": [
 		{
 			"name": "Nicolas Jonas",
@@ -11,7 +11,9 @@
 		}
 	],
 	"require": {
-		"php": ">=7.4"
+		"php": ">=7.4",
+		"nextgenthemes/wp-settings": "@dev",
+		"automattic/jetpack-autoloader": "^v5.0.2"
 	},
 	"autoload": {
 		"psr-4": {
@@ -19,11 +21,15 @@
 		}
 	},
 	"extra": {
-		"easy-digital-downloads/edd-sl-sdk": "1.0.0"
-	},
-	"require-dev": {
-		"nextgenthemes/wp-settings": "@dev",
-		"automattic/jetpack-autoloader": "^v5.0.2"
+		"next-require": {
+			"easy-digital-downloads/edd-sl-sdk": "^1.0.3"
+		},
+		"release-repo-changes": {
+			"nextgenthemes/wp-settings": {
+				"type": "vcs",
+				"url": "https://github.com/nextgenthemes/wp-settings.git"
+			}
+		}
 	},
 	"config": {
 		"allow-plugins": {
@@ -37,7 +43,7 @@
 	"repositories": {
 		"nextgenthemes/wp-settings": {
 			"type": "path",
-			"url": "../../../../../../dev/composer-packages/wp-settings",
+			"url": "../wp-settings",
 			"options": {
 				"symlink": false
 			}
@@ -46,18 +52,5 @@
 			"type": "vcs",
 			"url": "git@github.com:awesomemotive/edd-sl-sdk.git"
 		}
-	},
-	"scripts": {
-		"build": [
-			"wp @sdev arve block_json > src/block/block-tmp.json",
-			"mv src/block/block-tmp.json src/block/block.json",
-			"./bin/build-readme.php",
-			"npm run build:arve",
-			"rm build/block.json",
-			"npm run build:common",
-			"@composer update --optimize-autoloader",
-			"@composer update --working-dir=tests"
-		],
-		"pre-update-cmd": "./bin/sync-wp-settings"
 	}
 }

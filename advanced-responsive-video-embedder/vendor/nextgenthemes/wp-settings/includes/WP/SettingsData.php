@@ -6,10 +6,10 @@ namespace Nextgenthemes\WP;
 
 class SettingsData {
 
-	/** @var array <string, SettingValidator> */
+	/** @var array<string,SettingValidator> */
 	private array $settings = [];
 
-	/** @param array <string, array<string, mixed>> $settings */
+	/** @param array<string,array<string,mixed>> $settings */
 	public function __construct( array $settings, bool $arve = false ) {
 
 		foreach ( $settings as $key => $setting ) {
@@ -18,7 +18,7 @@ class SettingsData {
 	}
 
 	/**
-	 * @param array<string, mixed> $setting
+	 * @param array<string,mixed> $setting
 	 */
 	public function add( string $key, array $setting, bool $arve = false ): void {
 
@@ -45,7 +45,7 @@ class SettingsData {
 	}
 
 	/**
-	 * @return array<string, SettingValidator>
+	 * @return array<string,SettingValidator>
 	 */
 	public function get_all(): array {
 		return $this->settings;
@@ -57,7 +57,7 @@ class SettingsData {
 	 * Each key will be the key of the SettingValidator object, and the value will be the associative
 	 * array returned by SettingValidator::to_array().
 	 *
-	 * @return array <string, array<string, mixed>>
+	 * @return array<string,array<string,mixed>>
 	 */
 	public function to_array(): array {
 		$arr = [];

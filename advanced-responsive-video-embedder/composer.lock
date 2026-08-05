@@ -4,21 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e7839289e82f442fa55c21a0337fe51a",
-    "packages": [],
-    "packages-dev": [
+    "content-hash": "d19b65f18767f31a900cf7b18e43d426",
+    "packages": [
         {
             "name": "automattic/jetpack-autoloader",
-            "version": "v5.0.17",
+            "version": "v5.0.22",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Automattic/jetpack-autoloader.git",
-                "reference": "6933cc3d91d155ed6935d9c189077e7e1a8845bd"
+                "reference": "9c7627e832db897ebed54c0cb575eb089ab8d08a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Automattic/jetpack-autoloader/zipball/6933cc3d91d155ed6935d9c189077e7e1a8845bd",
-                "reference": "6933cc3d91d155ed6935d9c189077e7e1a8845bd",
+                "url": "https://api.github.com/repos/Automattic/jetpack-autoloader/zipball/9c7627e832db897ebed54c0cb575eb089ab8d08a",
+                "reference": "9c7627e832db897ebed54c0cb575eb089ab8d08a",
                 "shasum": ""
             },
             "require": {
@@ -26,7 +25,7 @@
                 "php": ">=7.2"
             },
             "require-dev": {
-                "automattic/phpunit-select-config": "^1.0.5",
+                "automattic/phpunit-select-config": "^1.0.9",
                 "composer/composer": "^2.2",
                 "yoast/phpunit-polyfills": "^4.0.0"
             },
@@ -67,17 +66,17 @@
                 "wordpress"
             ],
             "support": {
-                "source": "https://github.com/Automattic/jetpack-autoloader/tree/v5.0.17"
+                "source": "https://github.com/Automattic/jetpack-autoloader/tree/v5.0.22"
             },
-            "time": "2026-05-04T16:17:55+00:00"
+            "time": "2026-08-03T23:25:08+00:00"
         },
         {
             "name": "nextgenthemes/wp-settings",
             "version": "dev-master",
             "dist": {
                 "type": "path",
-                "url": "../../../../../../dev/composer-packages/wp-settings",
-                "reference": "133a5bd5218a29d76391b155086d914f9b4c1c3f"
+                "url": "../wp-settings",
+                "reference": "bc029f99b6ce1e36521f58fd2d81510a1e3913a3"
             },
             "require": {
                 "php": ">=7.4"
@@ -102,6 +101,7 @@
             }
         }
     ],
+    "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
@@ -116,5 +116,5 @@
     "platform-overrides": {
         "php": "7.4"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

@@ -3,6 +3,24 @@
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
 
+### 2026-08-05 10.9.4 ###
+
+* Improved: Removed debug code
+
+### 2026-08-05 10.9.3 ###
+
+* Improved: Removed short php tags
+
+### 2026-08-05 10.9.1 ###
+
+* Improved: Removed node_modules inside vendor
+
+### 2026-08-05 10.9.0 ###
+
+* New: Opt-in to ARVE news in the Settings page. News is no longer fetched by default.
+* Improved: Tested up to WordPress 7.0.2.
+* Improved: No more heredoc syntax.
+
 ### 2026-05-09 10.8.6 ###
 
 * Fix: Outdated plugins getting executed.

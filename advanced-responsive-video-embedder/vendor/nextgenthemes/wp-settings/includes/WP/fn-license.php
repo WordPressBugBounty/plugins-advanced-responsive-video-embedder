@@ -113,7 +113,7 @@ function api_action( int $item_id, string $license, string $edd_action = 'check_
 }
 
 /**
- * @param array <string, string> $license_data
+ * @param array<string,string> $license_data
  */
 function get_api_error_message( array $license_data ): string {
 

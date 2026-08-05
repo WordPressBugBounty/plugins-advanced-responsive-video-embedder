@@ -3,7 +3,7 @@
  * Plugin Name:       Advanced Responsive Video Embedder for Rumble, Odysee, YouTube, Vimeo, Kick ...
  * Plugin URI:        https://nextgenthemes.com/plugins/arve-pro/
  * Description:       Easy responsive video embeds via URL (like WordPress) or Shortcodes. Supports almost anything you can imagine.
- * Version:           10.8.7
+ * Version:           10.9.4
  * Requires PHP:      7.4
  * Requires at least: 6.6
  * Author:            Nicolas Jonas
@@ -22,7 +22,7 @@ declare(strict_types = 1);
 
 namespace Nextgenthemes\ARVE;
 
-const VERSION                       = '10.8.7';
+const VERSION                       = '10.9.4';
 const PRO_VERSION_REQUIRED          = '7.1.4';
 const PRIVACY_VERSION_REQUIRED      = '1.1.5';
 const RANDOMVIDEO_VERSION_REQUIRED  = '2.1.8';
@@ -35,7 +35,13 @@ const VIDEO_FILE_EXTENSIONS         = array( 'av1mp4', 'mp4', 'm4v', 'webm', 'og
 const DEFAULT_MAXWIDTH              = 900;
 const OEMBED_HTML_PRIORITY          = -5;
 const VIEW_SCRIPT_HANDLES           = array( 'arve', 'arve-pro', 'arve-sticky-videos', 'arve-random-video' );
-const ADDON_NAMES                   = array( 'RandomVideo', 'Pro', 'Privacy', 'StickyVideos', 'AMP' );
+const ADDONS                        = array(
+	'arve-random-video'  => 'RandomVideo',
+	'arve-pro'           => 'Pro',
+	'arve-privacy'       => 'Privacy',
+	'arve-sticky-videos' => 'StickyVideos',
+	'arve-amp'           => 'AMP',
+);
 // For error messages and stuff on the admin screens.
 const ALLOWED_HTML = array(
 	'h1'     => array( 'class' => true ),
@@ -73,8 +79,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	return; // no exit for use in build script
 }
 
-require_once __DIR__ . '/php/fn-update-check.php';
-require_once __DIR__ . '/vendor/autoload_packages.php';
+$autoloader = __DIR__ . '/vendor/autoload_packages.php';
+if ( file_exists( $autoloader ) ) {
+	require_once $autoloader;
+}
+
 require_once __DIR__ . '/php/init.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) { // @phpstan-ignore-line

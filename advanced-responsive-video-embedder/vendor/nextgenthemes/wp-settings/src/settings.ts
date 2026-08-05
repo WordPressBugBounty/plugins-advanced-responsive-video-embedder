@@ -3,77 +3,77 @@ import { debounce, aspectRatio } from './helpers';
 import { store, getContext, getConfig } from '@wordpress/interactivity';
 const domParser = new DOMParser();
 const d = document;
-const qs = d.querySelector.bind( d ) as typeof document.querySelector;
-const dialog = qs< HTMLDialogElement >( 'dialog[data-wp-interactive="nextgenthemes_arve_dialog"]' );
+const qs = d.querySelector.bind(d) as typeof document.querySelector;
+const dialog = qs<HTMLDialogElement>('dialog[data-wp-interactive="nextgenthemes_arve_dialog"]');
 
 setupInteractivityApi();
 setBodyBackgroundColorAsCssVar();
 
 function setBodyBackgroundColorAsCssVar() {
-	const backgroundColor = window.getComputedStyle( d.body ).backgroundColor;
-	const wrap = qs( '.wrap--nextgenthemes' );
+	const backgroundColor = window.getComputedStyle(d.body).backgroundColor;
+	const wrap = qs('.wrap--nextgenthemes');
 
-	if ( wrap ) {
-		wrap.setAttribute( 'style', `--ngt-wp-body-bg: ${ backgroundColor };` );
+	if (wrap) {
+		wrap.setAttribute('style', `--ngt-wp-body-bg: ${backgroundColor};`);
 	}
 }
 
 // ACF
-window.jQuery( document ).on( 'click', '.arve-btn:not([data-editor="content"])', ( e: Event ) => {
+window.jQuery(document).on('click', '.arve-btn:not([data-editor="content"])', (e: Event) => {
 	e.preventDefault();
 
-	const openBtn = qs< HTMLButtonElement >(
+	const openBtn = qs<HTMLButtonElement>(
 		'[data-wp-on--click="actions.openShortcodeDialog"][data-editor="content"]'
 	);
-	const insertBtn = qs< HTMLButtonElement >( '[data-wp-on--click="actions.insertShortcode"]' );
+	const insertBtn = qs<HTMLButtonElement>('[data-wp-on--click="actions.insertShortcode"]');
 
-	if ( ! openBtn || ! insertBtn || ! dialog ) {
+	if (!openBtn || !insertBtn || !dialog) {
 		console.error( 'Open btn, insert btn or dialog not found' ); // eslint-disable-line
 		return;
 	}
 
-	openBtn.dispatchEvent( new Event( 'click' ) );
-} );
+	openBtn.dispatchEvent(new Event('click'));
+});
 
 function setupInteractivityApi() {
-	const namespace = qs< HTMLElement >( '[data-wp-interactive^="nextgenthemes"]' )?.dataset
+	const namespace = qs<HTMLElement>('[data-wp-interactive^="nextgenthemes"]')?.dataset
 		?.wpInteractive;
 
-	if ( ! namespace ) {
+	if (!namespace) {
 		// In ARVE this script will always be loaded but the config is only output when the media button is on the page
 		return;
 	}
-	const config = getConfig( namespace ) as configInterface;
+	const config = getConfig(namespace) as configInterface;
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const { state, actions, callbacks, helpers } = store( namespace, {
+	const { state, actions, callbacks, helpers } = store(namespace, {
 		state: {
 			isValidLicenseKey: () => {
-				const context = getContext< optionContext >();
-				return 'valid' === state.options[ context.option_key + '_status' ];
+				const context = getContext<optionContext>();
+				return 'valid' === state.options[context.option_key + '_status'];
 			},
 			is32charactersLong: () => {
-				const context = getContext< optionContext >();
-				return state.options[ context.option_key ].length === 32;
+				const context = getContext<optionContext>();
+				return state.options[context.option_key].length === 32;
 			},
 			get isActiveTab() {
-				const context = getContext< optionContext >();
+				const context = getContext<optionContext>();
 
-				if ( ! context.activeTabs ) {
+				if (!context.activeTabs) {
 					return true; // shortcode dialog has no sections
 				}
 
-				return true === context?.activeTabs[ context.tab ];
+				return true === context?.activeTabs[context.tab];
 			},
 		},
 		actions: {
 			toggleHelp: () => {
-				state.help = ! state.help;
+				state.help = !state.help;
 			},
-			openShortcodeDialog: ( event: Event ) => {
+			openShortcodeDialog: (event: Event) => {
 				const editorId = event.target instanceof HTMLElement && event.target.dataset.editor;
 
-				if ( ! dialog || ! editorId ) {
+				if (!dialog || !editorId) {
 					console.error( 'Dialog or editorId not found' ); // eslint-disable-line
 					return;
 				}
@@ -84,121 +84,125 @@ function setupInteractivityApi() {
 			insertShortcode: () => {
 				const editorId = dialog?.dataset.editor;
 
-				if ( ! editorId ) {
+				if (!editorId) {
 					console.error( 'Editor ID not found' ); // eslint-disable-line
-				} else if ( 'content' === editorId ) {
-					window.wp.media.editor.insert( state.shortcode );
+				} else if ('content' === editorId) {
+					window.wp.media.editor.insert(state.shortcode);
 				} else {
 					// Ensure TinyMCE is loaded and the editor exists
-					if (
-						typeof window.tinymce === 'undefined' ||
-						! window.tinymce.get( editorId )
-					) {
+					if (typeof window.tinymce === 'undefined' || !window.tinymce.get(editorId)) {
 						console.error( 'TinyMCE not initialized for field: ' + editorId ); // eslint-disable-line
 						return;
 					}
 
-					window.tinymce.get( editorId ).insertContent( state.shortcode );
+					window.tinymce.get(editorId).insertContent(state.shortcode);
 				}
 
 				actions.closeShortcodeDialog();
 			},
 			closeShortcodeDialog: () => {
-				if ( dialog ) {
+				if (dialog) {
 					dialog.close();
 				}
 			},
 			changeTab: () => {
-				const context = getContext< optionContext >();
+				const context = getContext<optionContext>();
 
-				for ( const key in context.activeTabs ) {
-					context.activeTabs[ key ] = false;
+				for (const key in context.activeTabs) {
+					context.activeTabs[key] = false;
 				}
-				context.activeTabs[ context.tab ] = true;
+				context.activeTabs[context.tab] = true;
 			},
-			inputChange: ( event: Event ) => {
-				const context = getContext< optionContext >();
+			inputChange: (event: Event) => {
+				const context = getContext<optionContext>();
 
 				const isInput = event?.target instanceof HTMLInputElement;
 				const isSelect = event?.target instanceof HTMLSelectElement;
 
-				if ( ! isInput && ! isSelect ) {
-					throw new Error( 'event.target is not HTMLInputElement or HTMLSelectElement' );
+				if (!isInput && !isSelect) {
+					throw new Error('event.target is not HTMLInputElement or HTMLSelectElement');
 				}
 
-				if ( 'arveUrl' in event.target.dataset ) {
-					helpers.extractFromEmbedCode( event.target.value );
+				if ('arveUrl' in event.target.dataset) {
+					helpers.extractFromEmbedCode(event.target.value);
 				} else {
-					state.options[ context.option_key ] = event.target.value;
+					state.options[context.option_key] = event.target.value;
 				}
 
 				actions.saveOptions();
 			},
-			checkboxChange: ( event: Event ) => {
-				const context = getContext< optionContext >();
+			checkboxChange: (event: Event) => {
+				const context = getContext<optionContext>();
 
 				const isCheckbox =
 					event?.target instanceof HTMLInputElement && 'checkbox' === event?.target?.type;
 
-				if ( ! isCheckbox ) {
-					throw new Error( 'event.target is not HTMLInputElement type=checkbox' );
+				if (!isCheckbox) {
+					throw new Error('event.target is not HTMLInputElement type=checkbox');
 				}
 
-				state.options[ context.option_key ] = event?.target.checked;
+				state.options[context.option_key] = event?.target.checked;
 
 				actions.saveOptions();
 			},
+			optIntoNewsAndRefresh: () => {
+				// hardcode the option value to true (opt-in to news)
+				state.options.news_opt_in = true;
+
+				// save the options and hard refresh the page so the server-rendered news box appears
+				actions.restCall(config.restSettingsUrl, { [namespace]: state.options }, true);
+			},
 			selectImage: () => {
-				if ( dialog ) {
+				if (dialog) {
 					dialog.close();
 				}
 
-				const context = getContext< optionContext >();
+				const context = getContext<optionContext>();
 				const image = window.wp
-					.media( {
+					.media({
 						title: 'Upload Image',
 						multiple: false,
-					} )
+					})
 					.open()
-					.on( 'select', function () {
+					.on('select', function () {
 						// This will return the selected image from the Media Uploader, the result is an object
-						const uploadedImage = image.state().get( 'selection' ).first();
+						const uploadedImage = image.state().get('selection').first();
 						// We convert uploadedImage to a JSON object to make accessing it easier
 						const attachmentID = uploadedImage.toJSON().id;
-						state.options[ context.option_key ] = attachmentID;
-						if ( dialog ) {
+						state.options[context.option_key] = attachmentID;
+						if (dialog) {
 							dialog.showModal();
 						}
-					} )
-					.on( 'close', function () {
-						if ( dialog ) {
+					})
+					.on('close', function () {
+						if (dialog) {
 							dialog.showModal();
 						}
-					} );
+					});
 			},
 			deleteCaches: () => {
-				const context = getContext< clearCacheContext >();
+				const context = getContext<clearCacheContext>();
 
-				actions.restCall( config.restUrl + '/delete-caches', {
+				actions.restCall(config.restUrl + '/delete-caches', {
 					type: context.type,
 					prefix: context.prefix,
 					like: context.like,
 					not_like: context.type,
 					delete_option: context.delete_option,
-				} );
+				});
 			},
 			// debounced version created later
 			saveOptionsReal: () => {
-				actions.restCall( config.restSettingsUrl, {
-					[ namespace ]: state.options,
-				} );
+				actions.restCall(config.restSettingsUrl, {
+					[namespace]: state.options,
+				});
 			},
 			restCall: (
 				restUrl: string,
-				body: Record< string, any >,
+				body: Record<string, any>,
 				refreshAfter: boolean = false
 			) => {
-				if ( state.isSaving ) {
+				if (state.isSaving) {
 					state.message = 'trying to save too fast';
 					return;
 				}
@@ -210,43 +214,43 @@ function setupInteractivityApi() {
 				let hadError = false;
 
 				// Make a POST request to the REST API route that we registered in our PHP file
-				fetch( restUrl, {
+				fetch(restUrl, {
 					method: 'POST',
-					body: JSON.stringify( body ),
+					body: JSON.stringify(body),
 					headers: {
 						'Content-Type': 'application/json',
 						'X-WP-Nonce': config.nonce,
 					},
-				} )
-					.then( ( response ) => {
-						if ( ! response.ok ) {
+				})
+					.then((response) => {
+						if (!response.ok) {
 							hadError = true;
 						}
 						return response.json();
-					} )
-					.then( ( json ) => {
-						if ( hadError ) {
+					})
+					.then((json) => {
+						if (hadError) {
 							state.message = 'Error:';
-							state.debug = JSON.stringify( json, null, 2 );
+							state.debug = JSON.stringify(json, null, 2);
 						}
 
-						if ( ! hadError ) {
-							setTimeout( () => ( state.message = '' ), 666 );
+						if (!hadError) {
+							setTimeout(() => (state.message = ''), 666);
 						}
-					} )
-					.catch( ( error ) => {
+					})
+					.catch((error) => {
 						state.message = error.message;
-					} )
-					.finally( () => {
+					})
+					.finally(() => {
 						state.isSaving = false;
 
-						if ( refreshAfter ) {
+						if (refreshAfter) {
 							window.location.reload();
 						}
-					} );
+					});
 			},
 			eddLicenseAction() {
-				const context = getContext< optionContext >();
+				const context = getContext<optionContext>();
 
 				actions.restCall(
 					config.restUrl + '/edd-license-action',
@@ -255,29 +259,29 @@ function setupInteractivityApi() {
 						edd_store_url: context.edd_store_url, // EDD Store URL
 						edd_action: context.edd_action, // edd api arg has same edd_ prefix
 						item_id: context.edd_item_id, // edd api arg WITHOUT edd_ prefix
-						license: state.options[ context.option_key ], // edd api arg WITHOUT edd_ prefix
+						license: state.options[context.option_key], // edd api arg WITHOUT edd_ prefix
 					},
 					true
 				);
 			},
 			resetOptionsSection() {
-				const context = getContext< optionContext >();
+				const context = getContext<optionContext>();
 				const sectionToReset = context.tab;
 
-				Object.entries( config.defaultOptions ).forEach( ( [ section, options ] ) => {
-					if ( 'all' === sectionToReset ) {
+				Object.entries(config.defaultOptions).forEach(([section, options]) => {
+					if ('all' === sectionToReset) {
 						// reset all
-						Object.entries( options ).forEach( ( [ key, value ] ) => {
-							state.options[ key ] = value;
-						} );
+						Object.entries(options).forEach(([key, value]) => {
+							state.options[key] = value;
+						});
 					} else {
-						Object.entries( options ).forEach( ( [ key, value ] ) => {
-							if ( section === sectionToReset ) {
-								state.options[ key ] = value;
+						Object.entries(options).forEach(([key, value]) => {
+							if (section === sectionToReset) {
+								state.options[key] = value;
 							}
-						} );
+						});
 					}
-				} );
+				});
 
 				actions.saveOptionsReal();
 			},
@@ -286,15 +290,15 @@ function setupInteractivityApi() {
 			updateShortcode() {
 				let out = '';
 
-				for ( const [ key, value ] of Object.entries( state.options ) ) {
-					if ( 'credentialless' === key ) {
-						if ( false === value ) {
-							out += `${ key }="false" `;
+				for (const [key, value] of Object.entries(state.options)) {
+					if ('credentialless' === key) {
+						if (false === value) {
+							out += `${key}="false" `;
 						}
-					} else if ( true === value ) {
-						out += `${ key }="true" `;
-					} else if ( value ) {
-						out += `${ key }="${ value }" `;
+					} else if (true === value) {
+						out += `${key}="true" `;
+					} else if (value) {
+						out += `${key}="${value}" `;
 					}
 				}
 
@@ -331,22 +335,20 @@ function setupInteractivityApi() {
 			// },
 		},
 		helpers: {
-			debugJson: ( data: Record< string, unknown > ) => {
-				state.debug = JSON.stringify( data, null, 2 );
+			debugJson: (data: Record<string, unknown>) => {
+				state.debug = JSON.stringify(data, null, 2);
 			},
-			extractFromEmbedCode: ( url: string ) => {
-				const iframe = domParser
-					.parseFromString( url, 'text/html' )
-					.querySelector( 'iframe' );
-				const srcAttr = iframe && iframe.getAttribute( 'src' );
+			extractFromEmbedCode: (url: string) => {
+				const iframe = domParser.parseFromString(url, 'text/html').querySelector('iframe');
+				const srcAttr = iframe && iframe.getAttribute('src');
 
-				if ( srcAttr ) {
+				if (srcAttr) {
 					url = srcAttr;
 
-					if ( iframe.width && iframe.height ) {
-						const ratio = aspectRatio( iframe.width, iframe.height );
+					if (iframe.width && iframe.height) {
+						const ratio = aspectRatio(iframe.width, iframe.height);
 
-						if ( '16:9' !== ratio ) {
+						if ('16:9' !== ratio) {
 							state.options.aspect_ratio = ratio;
 						}
 					}
@@ -354,11 +356,11 @@ function setupInteractivityApi() {
 				state.options.url = url;
 			},
 		},
-	} ) as any;
+	}) as any;
 
-	actions.saveOptions = debounce( actions.saveOptionsReal, 1111 );
+	actions.saveOptions = debounce(actions.saveOptionsReal, 1111);
 
-	if ( 'nextgenthemes_arve_dialog' === namespace ) {
+	if ('nextgenthemes_arve_dialog' === namespace) {
 		actions.saveOptions = () => {};
 	}
 }
@@ -370,17 +372,17 @@ declare global {
 		};
 		jQuery: any;
 		tinymce: {
-			get: ( id: string ) => any;
+			get: (id: string) => any;
 		};
 	}
 }
 
 interface wpMedia {
-	( options: any ): any; // Function-like usage
+	(options: any): any; // Function-like usage
 	open: () => this; // Method to initialize the media dialog
-	on: ( eventName: string, callback: ( data: any ) => void ) => this; // Event subscription
+	on: (eventName: string, callback: (data: any) => void) => this; // Event subscription
 	editor: {
-		insert: ( content: string ) => void; // Method to insert content into the editor}
+		insert: (content: string) => void; // Method to insert content into the editor}
 	};
 }
 
@@ -390,7 +392,7 @@ interface optionContext {
 	edd_item_id: string;
 	edd_action: string;
 	edd_store_url: string;
-	activeTabs: { [ key: string ]: boolean };
+	activeTabs: { [key: string]: boolean };
 }
 
 interface clearCacheContext {
@@ -405,5 +407,5 @@ interface configInterface {
 	restUrl: string;
 	restSettingsUrl: string;
 	nonce: string;
-	defaultOptions: Record< string, string | number | boolean >;
+	defaultOptions: Record<string, string | number | boolean>;
 }

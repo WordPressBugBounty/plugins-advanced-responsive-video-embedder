@@ -9,7 +9,7 @@ use InvalidArgumentException;
 
 /**
  * @phpstan-type NgtSettingValue   string|int|float|bool
- * @phpstan-type NgtDependsSetting array<int, array<string, NgtSettingValue>>
+ * @phpstan-type NgtDependsSetting array<int,array<string,NgtSettingValue>>
  * @phpstan-type NgtSetting array{
  *   tab?: string,
  *   option_key?: string,
@@ -20,7 +20,7 @@ use InvalidArgumentException;
  *   placeholder?: string,
  *   shortcode?: bool,
  *   option?: bool,
- *   options?: array<string, string>,
+ *   options?: array<string,string>,
  *   depends?: NgtDependsSetting
  * }
  */
@@ -64,9 +64,9 @@ class SettingValidator {
 	public ?string $description;
 
 	/**
-	 * Options for <select>, value => label
+	 * Options for<select>, value => label
 	 *
-	 * @var array <string, string>
+	 * @var array<string,string>
 	 */
 	public ?array $options;
 	public string $sanitize_callback;
@@ -236,7 +236,7 @@ class SettingValidator {
 	}
 
 	/**
-	 * @return array <string, string|int|bool|null>
+	 * @return array<string,string|int|bool|null>
 	 */
 	public function to_array(): array {
 		return get_object_vars( $this );

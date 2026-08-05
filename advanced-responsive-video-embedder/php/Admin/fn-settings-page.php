@@ -5,6 +5,8 @@ declare(strict_types = 1);
 namespace Nextgenthemes\ARVE\Admin;
 
 use function Nextgenthemes\ARVE\is_dev_mode;
+use function Nextgenthemes\ARVE\options;
+use function Nextgenthemes\ARVE\settings_data;
 use function Nextgenthemes\WP\remote_get_body_cached;
 use function Nextgenthemes\WP\first_tag_attr;
 use const Nextgenthemes\ARVE\ALLOWED_HTML;
@@ -108,13 +110,13 @@ function settings_content(): void {
 
 	<?php if ( ! is_plugin_active( 'arve-pro/arve-pro.php' ) ) : ?>
 		<p data-wp-bind--hidden="!context.activeTabs.pro">
-			<?= pro_message( 'ARVE Pro', 'arve-pro' ); // phpcs:ignore ?>
+			<?php echo pro_message( 'ARVE Pro', 'arve-pro' ); // phpcs:ignore ?>
 		</p>
 	<?php endif; ?>
 
 	<?php if ( ! is_plugin_active( 'arve-privacy/arve-privacy.php' ) ) : ?>
 		<p data-wp-bind--hidden="!context.activeTabs.privacy">
-			<?= pro_message( 'ARVE Privacy', 'arve-privacy' ); // phpcs:ignore ?>
+			<?php echo pro_message( 'ARVE Privacy', 'arve-privacy' ); // phpcs:ignore ?>
 		</p>
 	<?php endif; ?>
 
@@ -132,13 +134,13 @@ function settings_content(): void {
 
 	<?php if ( ! is_plugin_active( 'arve-stick-videos/arve-sticky-videos.php' ) ) : ?>
 		<p data-wp-bind--hidden="!context.activeTabs.sticky_videos">
-			<?= pro_message( 'ARVE Sticky Videos', 'arve-stick-videos' ); // phpcs:ignore ?>
+			<?php echo pro_message( 'ARVE Sticky Videos', 'arve-stick-videos' ); // phpcs:ignore ?>
 		</p>
 	<?php endif; ?>
 
 	<?php if ( ! is_plugin_active( 'arve-random-video/arve-random-video.php' ) ) : ?>
 		<p data-wp-bind--hidden="!context.activeTabs.random_video">
-			<?= pro_message( 'ARVE Random Video', 'arve-random-video' ); // phpcs:ignore ?>
+			<?php echo pro_message( 'ARVE Random Video', 'arve-random-video' ); // phpcs:ignore ?>
 		</p>
 	<?php endif; ?>
 
@@ -202,6 +204,30 @@ function print_settings_box_html( string $file ): void {
 }
 
 function print_arve_news(): void {
+
+	if ( ! options()['news_opt_in'] ) {
+
+		$setting = settings_data()->get( 'news_opt_in' );
+		?>
+		<div class="ngt-sidebar-box">
+			<h3>
+				<?php esc_html_e( 'ARVE News', 'advanced-responsive-video-embedder' ); ?>
+			</h3>
+			<p>
+				<?php echo wp_kses( $setting->description, array( 'code' => array() ), array( 'https' ) ); ?>
+			</p>
+			<button
+				class="button"
+				type="button"
+				data-wp-on--click="actions.optIntoNewsAndRefresh"
+			>
+				<?php esc_html_e( 'Enable ARVE news', 'advanced-responsive-video-embedder' ); ?>
+			</button>
+		</div>
+		<?php
+
+		return;
+	}
 
 	$response = remote_get_body_cached(
 		add_query_arg(

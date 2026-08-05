@@ -7,7 +7,7 @@ namespace Nextgenthemes\WP;
 /**
  * This function returns the block wrapper attributes as a string, it ignores null and false values to align the functionality with Nextgenthemes `attr` function. And is escapes the URL values with `esc_url`.
  *
- * @param array <string, string> $attr The array of attributes.
+ * @param array<string,string> $attr The array of attributes.
  * @return string The block wrapper attributes as a string.
  */
 function ngt_get_block_wrapper_attributes( array $attr ): string {
@@ -25,7 +25,7 @@ function ngt_get_block_wrapper_attributes( array $attr ): string {
 }
 
 /**
- * @param array <string, mixed> $attr
+ * @param array<string,mixed> $attr
  */
 function attr( array $attr = array() ): string {
 
@@ -61,10 +61,10 @@ function attr( array $attr = array() ): string {
 /**
  * Move certain keys to the start of an associative array.
  *
- * @param array<string, mixed> $org  The original array.
- * @param array<string>        $keys The keys to move to the start.
+ * @param array<string,mixed> $org  The original array.
+ * @param array<string>       $keys The keys to move to the start.
  *
- * @return array<string, mixed> The modified array.
+ * @return array<string,mixed> The modified array.
  */
 function move_keys_to_start( array $org, array $keys ): array {
 
@@ -83,9 +83,9 @@ function move_keys_to_start( array $org, array $keys ): array {
 /**
  * Move specified keys to the end of an array
  *
- * @param array<string, mixed> $org   Array to modify
- * @param array<int, string>   $keys  Keys to move to the end
- * @return array<string, mixed> Modified array with keys moved to end
+ * @param array<string,mixed> $org  Array to modify
+ * @param array<int,string>   $keys Keys to move to the end
+ * @return array<string,mixed> Modified array with keys moved to end
  */
 function move_keys_to_end( array $org, array $keys ): array {
 
@@ -102,7 +102,7 @@ function move_keys_to_end( array $org, array $keys ): array {
 }
 
 /**
- * This is to prevent constant() throwing as Error in PHP 8, E_WARNING in PHP < 8
+ * This is to prevent constant() throwing as Error in PHP 8, E_WARNING in PHP< 8
  *
  * @return mixed
  */
@@ -147,8 +147,8 @@ function str_to_array( string $str, string $delimiter = ',' ): array {
  * @param callable(string):string $callback The callback function to apply to each key, must return a string.
  * @param array<mixed>            $arr      The input array with any value types.
  *
- * @return array<mixed>                     The resulting array with modified keys.
- * @throws \InvalidArgumentException        If the callback is not callable or if the callback returns non-string keys.
+ * @return array<mixed>              The resulting array with modified keys.
+ * @throws \InvalidArgumentException If the callback is not callable or if the callback returns non-string keys.
  */
 function array_map_key( callable $callback, array $arr ): array {
 

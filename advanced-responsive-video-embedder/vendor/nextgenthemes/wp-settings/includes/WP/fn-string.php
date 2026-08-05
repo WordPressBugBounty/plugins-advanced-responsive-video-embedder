@@ -9,8 +9,8 @@ use WP_HTML_Tag_Processor;
 /**
  * Adds, updates or removes attributes to the first HTML tag passed in.
  *
- * @param string                               $html The HTML string, e.g. <div>...</div>.
- * @param array <string, int|string|bool|null> $attr A list of HTML attributes, e.g. class, src, href, etc.
+ * @param string                              $html  The HTML string, e.g. <div>...</div>.
+ * @param array<string,int|string|bool|null>  $attr  A list of HTML attributes, e.g. class, src, href, etc.
  *
  * @return string The updated HTML updated as string.
  */
@@ -31,8 +31,8 @@ function first_tag_attr( string $html, array $attr ): string {
 /**
  * Applies attributes to the HTML tag the WP_HTML_Tag_Processor is currently on.
  *
- * @param WP_HTML_Tag_Processor                  $p     The tag processor.
- * @param array <string, string|int|float|bool>  $attr  A list of HTML attributes, e.g. class, src, href, etc.
+ * @param WP_HTML_Tag_Processor                $p     The tag processor.
+ * @param array<string,string|int|float|bool>  $attr  A list of HTML attributes, e.g. class, src, href, etc.
  *
  * @return WP_HTML_Tag_Processor  The tag processor.
  */
@@ -107,8 +107,8 @@ function get_attribute_from_html_tag( array $query, string $attribute, string $h
 /**
  * Checks if any of the needles are contained within the haystack.
  *
- * @param string              $haystack The string to search in.
- * @param array <int, string> $needles  An array of strings to search for.
+ * @param string             $haystack  The string to search in.
+ * @param array<int,string>  $needles   An array of strings to search for.
  */
 function str_contains_any( string $haystack, array $needles ): bool {
 

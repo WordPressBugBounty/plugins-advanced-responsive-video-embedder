@@ -9,10 +9,10 @@
  * your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details. You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://opensource.org/licenses/gpl-license.php>
+ * with this program. If not, see<http://opensource.org/licenses/gpl-license.php>
  *
  * @author    Nicolas Jonas
- * @author    Julien Liabeuf <julien@liabeuf.fr>
+ * @author    Julien Liabeuf<julien@liabeuf.fr>
  * @version   1.2.1
  * @license   GPL-3.0
  * @link      https://nextgenthemes.com
@@ -49,13 +49,12 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		/**
 		 * All registered notices.
 		 *
-		 * @var array <string, array{
+		 * @var array<string, array{
 		 *     type: string,
 		 *     content: string,
 		 *     screen?: string,
 		 *     scope: string,
-		 *     cap?: string,
-		 *     class?: string
+		 *     cap?: string,*     class?: string
 		 * }>
 		 */
 		private array $notices = array();
@@ -206,11 +205,10 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		/**
 		 * Get the default arguments for a notice
 		 *
-		 * @return array <string, array{
+		 * @return array<string, array{
 		 *     screen: string,
 		 *     scope: string,
-		 *     cap: string,
-		 *     class: string
+		 *     cap: string,*     class: string
 		 * }>
 		 */
 		private function default_args(): array {
@@ -233,7 +231,7 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		 * @param string $id                      Notice ID, used to identify it
 		 * @param string $type                    Type of notice to display
 		 * @param string $content                 Notice content
-		 * @param array  <string, mixed> $args    Additional parameters
+		 * @param array<string,mixed> $args    Additional parameters
 		 *
 		 */
 		public function register_notice( string $id, string $type, string $content, array $args = array() ): bool {
@@ -451,7 +449,7 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		 *
 		 * This includes notices dismissed globally or per user.
 		 *
-		 * @return array <string, string>
+		 * @return array<string,string>
 		 */
 		public function dismissed_notices(): array {
 
@@ -464,7 +462,7 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		/**
 		 * Get user dismissed notices
 		 *
-		 * @return array <string, string>
+		 * @return array<string,string>
 		 */
 		private function dismissed_user(): array {
 
@@ -480,7 +478,7 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		/**
 		 * Get globally dismissed notices
 		 *
-		 * @return array <string, string>
+		 * @return array<string,string>
 		 */
 		private function dismissed_global(): array {
 			return get_option( 'dnh_dismissed_notices', array() );
@@ -508,13 +506,12 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		/**
 		 * Get all the registered notices
 		 *
-		 * @return array <string, array{
+		 * @return array<string, array{
 		 *     type: string,
 		 *     content: string,
 		 *     screen?: string,
 		 *     scope: string,
-		 *     cap?: string,
-		 *     class?: string
+		 *     cap?: string,*     class?: string
 		 * }>
 		 */
 		public function get_notices(): array {
@@ -528,7 +525,7 @@ if ( ! class_exists( 'Nextgenthemes\WP\Admin\Notices' ) ) {
 		 *
 		 * @param string $id Notice ID
 		 *
-		 * @return false|array <string, string>
+		 * @return false|array<string,string>
 		 */
 		public function get_notice( string $id ) {
 
