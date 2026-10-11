@@ -113,6 +113,19 @@ function setupInteractivityApi() {
 				}
 				context.activeTabs[context.tab] = true;
 			},
+			textareaChange: (event: Event) => {
+				const context = getContext<optionContext>();
+
+				const isTextarea =
+					event?.target instanceof HTMLTextAreaElement;
+
+				if (!isTextarea) {
+					throw new Error('event.target is not HTMLTextAreaElement');
+				}
+
+				state.options[context.option_key] = event.target.value;
+				actions.saveOptions();
+			},
 			inputChange: (event: Event) => {
 				const context = getContext<optionContext>();
 

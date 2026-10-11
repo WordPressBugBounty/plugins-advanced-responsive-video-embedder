@@ -229,7 +229,7 @@ class Settings {
 		$extra_links['ngt-settings'] = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( admin_url( 'options-general.php?page=' . $this->slugged_namespace ) ),
-			esc_html__( 'Settings' ) // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			esc_html__( 'Settings' ) // phpcs:ignore WordPress.WP.I18n.MissingArgDomainDefault
 		);
 
 		return array_merge( $extra_links, $links );

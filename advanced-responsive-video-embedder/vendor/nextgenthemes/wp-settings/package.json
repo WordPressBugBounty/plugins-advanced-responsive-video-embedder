@@ -8,7 +8,7 @@
 		"@wordpress/interactivity": "*"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "*",
+		"@wordpress/scripts": "^34.1.0",
 		"webpack-notifier": "^1.15.0"
 	},
 	"ngt-bind": {

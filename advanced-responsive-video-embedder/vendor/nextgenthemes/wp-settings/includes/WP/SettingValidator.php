@@ -138,7 +138,9 @@ class SettingValidator {
 
 	public function set_ui_element_and_type(): void {
 
-		if ( ! empty( $this->options ) ) {
+		if ( 'textarea' === $this->ui ) {
+			$this->ui_element = 'textarea';
+		} elseif ( ! empty( $this->options ) ) {
 			$this->ui_element = 'select';
 		} else {
 			$this->ui_element      = 'input';

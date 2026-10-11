@@ -142,6 +142,11 @@
 	}
 }
 
+.textarea--auto-expand {
+	field-sizing: content;
+	resize: none;
+}
+
 input.text-large--ngt-key { /* stylelint-disable-line selector-no-qualifying-type */
 	width: 21em;
 

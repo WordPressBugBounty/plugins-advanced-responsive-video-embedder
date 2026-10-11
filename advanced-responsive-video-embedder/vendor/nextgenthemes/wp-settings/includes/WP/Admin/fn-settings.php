@@ -81,7 +81,26 @@ function option_block( string $key, SettingValidator $setting, array $tabs ): vo
 		<div>
 			<div>
 				<?php
-				if ( 'select' === $setting->ui_element ) {
+				if ( 'textarea' === $setting->ui_element ) {
+
+					label( $input_id, $setting, $tabs );
+					$textarea_html = sprintf(
+						'<textarea>%s</textarea>',
+						esc_textarea( (string) $setting->default )
+					);
+					echo first_tag_attr(
+						$textarea_html,
+						array(
+							'class'                  => 'large-text textarea--auto-expand',
+							'id'                     => $input_id,
+							'rows'                   => 2,
+							'data-wp-on--input'      => 'actions.textareaChange',
+							'data-wp-bind--value'    => 'state.options.' . esc_attr( $key ),
+							'placeholder'            => $setting->placeholder ?? '',
+							'data-wp-bind--disabled' => 'state.isSaving',
+						)
+					);
+				} elseif ( 'select' === $setting->ui_element ) {
 
 					label( $input_id, $setting, $tabs );
 					?>

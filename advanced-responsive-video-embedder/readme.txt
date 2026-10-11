@@ -3,9 +3,9 @@ Contributors: nico23
 Donate link: https://nextgenthemes.com/donate/
 Tags: embed, video, lazyload, lightbox, rumble
 Requires at least: 6.6
-Tested up to: 7.0.2
+Tested up to: 7.1.3
 Requires PHP: 7.4
-Stable tag: 10.9.4
+Stable tag: 10.9.5
 License: GPL-3.0
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -99,7 +99,7 @@ This plugin is financed by purchases of [ARVE Pro][20]. The development and supp
 *   2 hover & 3 play icon styles
 *   Responsive thumbnails (srcset)
 *   **Feel good about yourself**<br>
-    for supporting my 8+ years work on this plugin. Tons of hours, weekends … always worked on improving it
+    for supporting my 14+ years work on this plugin. Tons of hours, weekends … always worked on improving it
 *   Show the latest video of a YouTube channel by using the channel URL (updated/cached hourly)
 *   **[Get ARVE Pro][20]**
 
@@ -121,18 +121,6 @@ Display random video from:
 *  YouTube Playlist
 *  Vimeo Showcase
 *  Comma separated list of video URLs
-
-### [ARVE AMP][29] ###
-
-When you use the AMP or 'AMP for WP' plugin you need this.
-
-* It will display videos embedded with ARVE on AMP pages correctly
-* No options, just works
-* It creates `<amp-youtube>`, `<amp-vimeo>`, `<amp-dailymotion>` elements
-* For all other video hosts `<amp-video-iframe>` element is used
-* Video files are also supported with `<amp-video>`
-
-  [29]: https://nextgenthemes.com/plugins/arve-amp/
 
 ### Thanks ###
 
@@ -192,6 +180,10 @@ Please read the [official documentation](https://wordpress.org/support/article/m
 
 * [ARVE Pro changelog](https://nextgenthemes.com/plugins/arve-pro/#changelog)
 * [ARVE Random Videos changelog](https://nextgenthemes.com/plugins/arve-random-video/#changelog)
+
+### 2026-10-10 10.9.5 ###
+
+* Fix: Incorrect PHP types for notice dismiss code.
 
 ### 2026-08-05 10.9.4 ###
 
